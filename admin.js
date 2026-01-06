@@ -129,6 +129,9 @@ if (logoutBtn) {
 
 async function loadRequests() {
     try {
+        // First, cleanup requests assigned to offline admins
+        await cleanupOfflineAdminRequests();
+        
         let data = await getBonusRequests();
         
         // Auto-assign unassigned pending requests to online admins
@@ -1896,12 +1899,18 @@ async function setAdminStatus(status) {
         currentAdminStatus = status;
         localStorage.setItem('vegas_admin_status', status);
         updateStatusUI(status);
+        
+        // If going offline or on break, unassign pending requests
+        if (status === 'offline' || status === 'break') {
+            await unassignAdminRequests(adminId);
+        }
+        
         renderTable(); // Refresh to apply status filter
         
         const statusMessages = {
             'online': 'Artık talep alabilirsiniz.',
-            'break': 'Mola modundasınız. Yeni talep atanmayacak.',
-            'offline': 'Çevrimdışısınız.'
+            'break': 'Mola modundasınız. Talepleriniz başka adminine aktarıldı.',
+            'offline': 'Çevrimdışısınız. Talepleriniz başka adminine aktarıldı.'
         };
         showToast('Durum Güncellendi', statusMessages[status], 'info');
         

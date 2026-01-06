@@ -328,3 +328,42 @@ async function autoAssignRequest(requestId) {
     await assignRequestToAdmin(requestId, minAdmin.id);
     return minAdmin;
 }
+
+// Unassign all pending requests from an admin (when they go offline)
+async function unassignAdminRequests(adminId) {
+    const { error } = await supabaseClient
+        .from('bonus_requests')
+        .update({ assigned_to: null, assigned_at: null })
+        .eq('assigned_to', adminId)
+        .eq('status', 'pending');
+    
+    if (error) {
+        console.error('Error unassigning requests:', error);
+        return false;
+    }
+    return true;
+}
+
+// Cleanup: Unassign pending requests from offline admins
+async function cleanupOfflineAdminRequests() {
+    // Get all offline admins
+    const { data: offlineAdmins } = await supabaseClient
+        .from('admins')
+        .select('id')
+        .neq('status', 'online');
+    
+    if (!offlineAdmins || offlineAdmins.length === 0) return;
+    
+    const offlineIds = offlineAdmins.map(a => a.id);
+    
+    // Unassign their pending requests
+    const { error } = await supabaseClient
+        .from('bonus_requests')
+        .update({ assigned_to: null, assigned_at: null })
+        .in('assigned_to', offlineIds)
+        .eq('status', 'pending');
+    
+    if (error) {
+        console.error('Error cleaning up offline requests:', error);
+    }
+}
