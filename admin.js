@@ -1365,8 +1365,13 @@ if (addAdminForm) {
             return;
         }
 
-        if (addAdmin(username, password, role)) {
+        const result = await addAdmin(username, password, role);
+        if (result) {
             addAdminForm.reset();
+            showToast('Başarılı', username + ' eklendi.', 'success');
+            await loadAdminList();
+        } else {
+            showToast('Hata', 'Admin eklenemedi.', 'error');
         }
     });
 }
