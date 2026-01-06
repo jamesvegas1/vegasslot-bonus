@@ -32,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('vegas_admin_user', admin.username);
                 localStorage.setItem('vegas_admin_role', admin.role);
                 localStorage.setItem('vegas_admin_id', admin.id);
+                localStorage.setItem('vegas_admin_status', 'online');
+                
+                // Set admin status to online in database
+                await updateAdminStatus(admin.id, 'online');
+                
                 window.location.href = 'admin.html';
             } else {
                 // Failure
