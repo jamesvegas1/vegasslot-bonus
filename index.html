@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonus Talep | Casino</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="bg-wrapper">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="grid-overlay"></div>
+        <img src="left_character.png" alt="" class="side-image side-image-left">
+        <img src="right_props.png" alt="" class="side-image side-image-right">
+    </div>
+
+    <main class="container">
+        <header class="page-header">
+            <img src="logo.png" alt="VegasSlot" class="brand-logo">
+            <h1 class="title">Bonus Talep Formu</h1>
+            <p class="subtitle">Bonus talebinizi aşağıdan iletin. Tüm talepler manuel olarak incelenir.</p>
+            <div class="progress-indicator">
+                <span class="dot active"></span>
+                Adım 1 / 1 — Bonus Talebi
+            </div>
+        </header>
+
+        <section class="card">
+            <!-- Decorative elements -->
+            <div class="card-glow"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <form id="bonusForm" class="bonus-form">
+
+                <div class="form-group">
+                    <label for="username">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" id="username" name="username" placeholder="Kullanıcı adınızı girin" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bonus_type">Bonus Türü</label>
+                    <div class="input-wrapper select-wrapper">
+                        <span class="input-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                                <rect x="2" y="7" width="20" height="5"></rect>
+                                <line x1="12" y1="22" x2="12" y2="7"></line>
+                                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                            </svg>
+                        </span>
+                        <select id="bonusType" name="bonusType" required>
+                            <option value="" disabled selected>Bonus Seçiniz</option>
+                            <option value="welcome_casino">Hoş Geldin Casino Bonusu</option>
+                            <option value="welcome_sport">Hoş Geldin Spor Bonusu</option>
+                            <option value="pragmatic_slot">%100 Pragmatic Slot Bonusu</option>
+                            <option value="compensation">Telafi Bonusu</option>
+                            <option value="sport_return_50">%50 Spor İade</option>
+                            <option value="sport_loss_20">%20 Spor Kayıp</option>
+                            <option value="cashback_20">%20 Nakit İade</option>
+                            <option value="weekly_loss_10">%10 Haftalık Kayıp Bonusu</option>
+                            <option value="birthday">Doğum Günü Bonusu</option>
+                            <option value="chance_jest">Şans - Jest Bonusu</option>
+                            <option value="freespin">Freespin</option>
+                        </select>
+                    </div>
+                    <div id="bonusHelper" class="input-helper hidden">
+                        <span class="helper-icon">ⓘ</span> Uygunluk hesap hareketlerinize göre kontrol edilecektir.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Talep Notu <span class="optional">(İsteğe bağlı)</span></label>
+                    <div class="input-wrapper textarea-wrapper">
+                        <span class="input-icon top-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </span>
+                        <textarea id="note" name="note"
+                            placeholder="Neden bu bonus için uygun olduğunuzu kısaca açıklayın" maxlength="250"
+                            rows="3"></textarea>
+                    </div>
+                    <div class="char-count">0 / 250</div>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-header">
+                        <div class="info-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <span class="info-title">Önemli Bilgi</span>
+                    </div>
+                    <p>Bonus talepleri otomatik olarak tanımlanmaz. Tüm talepler manuel olarak incelenir ve uygun
+                        görülürse tanımlama yapılır.</p>
+                </div>
+
+                <div class="cta-wrapper">
+                    <p class="cta-helper">İşlem süresi genellikle birkaç dakikadır</p>
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-text">Bonus Talep Et</span>
+                        <span class="btn-shine"></span>
+                        <span class="loader hidden"></span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="successState" class="success-state hidden">
+                <div class="success-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <h2>Talep Alındı</h2>
+                <p>Bonus talebiniz başarıyla alındı ve kısa süre içinde incelenecektir.</p>
+                <div class="queue-info">
+                    <span class="queue-label">Sıra Numaranız</span>
+                    <span class="queue-number" id="queueNumber">1</span>
+                    <span class="queue-text">bekleyen talep arasında</span>
+                </div>
+                <button id="resetBtn" class="reset-btn">Yeni Talep Oluştur</button>
+            </div>
+
+            <!-- Status Check Section -->
+            <div id="statusCheckSection" class="status-check-section">
+                <div class="status-check-divider">
+                    <span>veya</span>
+                </div>
+                <button id="checkStatusBtn" class="check-status-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Bonus Durumu Sorgula
+                </button>
+            </div>
+
+            <!-- Status Check Modal -->
+            <div id="statusCheckModal" class="status-modal hidden">
+                <div class="status-modal-content">
+                    <button class="status-modal-close" id="closeStatusModal">&times;</button>
+                    <h3>Bonus Durumu Sorgula</h3>
+                    <p>Kullanıcı adınızı girerek bonus taleplerinizin durumunu öğrenin.</p>
+                    <div class="status-form">
+                        <input type="text" id="statusUsername" placeholder="Kullanıcı adınız">
+                        <button id="searchStatusBtn" class="search-btn">Sorgula</button>
+                    </div>
+                    <div id="statusResults" class="status-results hidden">
+                        <!-- Results populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="notification-modal hidden">
+        <div class="notification-backdrop"></div>
+        <div class="notification-content">
+            <div class="notification-icon" id="notifIcon">
+                <!-- Icon set by JS -->
+            </div>
+            <h2 id="notifTitle">Bildirim</h2>
+            <p id="notifMessage">Mesaj</p>
+            <div class="notification-details" id="notifDetails"></div>
+            <button id="notifCloseBtn" class="notification-btn">Tamam</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="script.js?v=3"></script>
+</body>
+
+</html>
