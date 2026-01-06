@@ -60,41 +60,42 @@ let peakHoursChart = null;
 // --- Start Up ---
 (async () => {
     await loadRequests();
-    handleNavigation('dashboard');
+    // Restore last active tab or default to dashboard
+    const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
+    handleNavigation(lastTab);
 })();
 // Auto-refresh every 30 seconds to catch new requests
 let lastPendingCount = 0;
 
-// Notification sound function - pleasant chime
+// Notification sound function - 3 tone chime
 function playNotificationSound() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        // First chime note (G#5)
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.frequency.value = 830;
-        osc1.type = 'sine';
-        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        osc1.start(audioCtx.currentTime);
-        osc1.stop(audioCtx.currentTime + 0.5);
+        // Three ascending notes for a pleasant notification
+        const notes = [
+            { freq: 523, delay: 0, duration: 0.3 },      // C5
+            { freq: 659, delay: 0.15, duration: 0.3 },   // E5
+            { freq: 784, delay: 0.3, duration: 0.5 }     // G5
+        ];
         
-        // Second chime note (C6 - delayed)
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.frequency.value = 1046;
-        osc2.type = 'sine';
-        gain2.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
-        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.55);
-        osc2.start(audioCtx.currentTime + 0.12);
-        osc2.stop(audioCtx.currentTime + 0.55);
-    } catch (e) {}
+        notes.forEach(note => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = note.freq;
+            osc.type = 'sine';
+            
+            const startTime = audioCtx.currentTime + note.delay;
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+            
+            osc.start(startTime);
+            osc.stop(startTime + note.duration);
+        });
+    } catch (e) { console.log('Audio error:', e); }
 }
 
 setInterval(async () => {
@@ -108,7 +109,7 @@ setInterval(async () => {
         showToast('Yeni Talep!', 'Yeni bir bonus talebi geldi.', 'info');
     }
     lastPendingCount = currentPending;
-}, 30000);
+}, 5000);
 
 // --- Logout ---
 if (logoutBtn) {
@@ -1158,6 +1159,9 @@ navItems.forEach(item => {
 });
 
 function handleNavigation(view) {
+    // Save current tab to restore after refresh
+    sessionStorage.setItem('vegas_admin_tab', view);
+    
     // Update Active State
     navItems.forEach(nav => nav.classList.remove('active'));
     const activeNav = document.querySelector(`.nav-item[data-view="${view}"]`);
