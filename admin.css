@@ -2513,3 +2513,129 @@ body {
 .sort-handle:hover {
     color: #9ca3af;
 }
+
+/* Status Toggle */
+.status-toggle {
+    display: flex;
+    gap: 0.25rem;
+    background: #1a1d24;
+    padding: 0.25rem;
+    border-radius: 8px;
+    margin-right: 0.5rem;
+}
+
+.status-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    opacity: 0.5;
+    transition: all 0.2s;
+}
+
+.status-btn:hover {
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.status-btn.active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.status-label {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-right: 1rem;
+    min-width: 60px;
+}
+
+.status-label.online {
+    color: #10b981;
+}
+
+.status-label.break {
+    color: #f59e0b;
+}
+
+.status-label.offline {
+    color: #6b7280;
+}
+
+/* Personnel Status Badges */
+.personnel-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+}
+
+.status-dot.online {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-dot.break {
+    background: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    animation: none;
+}
+
+.status-dot.offline {
+    background: #6b7280;
+    animation: none;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Assigned Badge */
+.assigned-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(139, 92, 246, 0.2);
+    color: #8b5cf6;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.unassigned-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+/* Take Request Button */
+.btn-take {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-take:hover {
+    transform: scale(1.05);
+}

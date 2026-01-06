@@ -230,3 +230,101 @@ async function updateAdmin(id, updates) {
         .eq('id', id);
     return !error;
 }
+
+// Update admin status (online, break, offline)
+async function updateAdminStatus(id, status) {
+    const { error } = await supabaseClient
+        .from('admins')
+        .update({ 
+            status: status,
+            last_seen: new Date().toISOString()
+        })
+        .eq('id', id);
+    return !error;
+}
+
+// Get online admins
+async function getOnlineAdmins() {
+    const { data, error } = await supabaseClient
+        .from('admins')
+        .select('*')
+        .eq('status', 'online');
+    if (error) return [];
+    return data;
+}
+
+// Assign request to admin
+async function assignRequestToAdmin(requestId, adminId) {
+    const { error } = await supabaseClient
+        .from('bonus_requests')
+        .update({ 
+            assigned_to: adminId,
+            assigned_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+    return !error;
+}
+
+// Get requests assigned to admin
+async function getAssignedRequests(adminId) {
+    const { data, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .eq('assigned_to', adminId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+    if (error) return [];
+    return data;
+}
+
+// Get unassigned pending requests
+async function getUnassignedRequests() {
+    const { data, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .is('assigned_to', null)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+    if (error) return [];
+    return data;
+}
+
+// Auto-assign request to next online admin (round-robin)
+async function autoAssignRequest(requestId) {
+    const onlineAdmins = await getOnlineAdmins();
+    if (onlineAdmins.length === 0) return null;
+    
+    // Get request counts for each online admin
+    const { data: counts } = await supabaseClient
+        .from('bonus_requests')
+        .select('assigned_to')
+        .eq('status', 'pending')
+        .not('assigned_to', 'is', null);
+    
+    // Count assignments per admin
+    const assignmentCounts = {};
+    onlineAdmins.forEach(a => assignmentCounts[a.id] = 0);
+    if (counts) {
+        counts.forEach(r => {
+            if (assignmentCounts[r.assigned_to] !== undefined) {
+                assignmentCounts[r.assigned_to]++;
+            }
+        });
+    }
+    
+    // Find admin with least assignments
+    let minAdmin = onlineAdmins[0];
+    let minCount = assignmentCounts[minAdmin.id] || 0;
+    
+    onlineAdmins.forEach(a => {
+        const count = assignmentCounts[a.id] || 0;
+        if (count < minCount) {
+            minCount = count;
+            minAdmin = a;
+        }
+    });
+    
+    // Assign to this admin
+    await assignRequestToAdmin(requestId, minAdmin.id);
+    return minAdmin;
+}

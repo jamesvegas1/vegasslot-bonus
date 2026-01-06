@@ -115,7 +115,9 @@ async function loadRequests() {
             adminNote: r.admin_note || '',
             timestamp: r.created_at,
             status: r.status,
-            notified: r.notified
+            notified: r.notified,
+            assignedTo: r.assigned_to,
+            assignedAt: r.assigned_at
         }));
         renderTable();
         updateStats();
@@ -1628,13 +1630,20 @@ async function loadPersonnelList() {
             const date = new Date(a.created_at);
             const dateStr = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
             const roleLabel = a.role === 'admin' ? 'Admin' : 'Senior Agent';
+            const status = a.status || 'offline';
+            const statusLabels = { online: 'Online', break: 'Mola', offline: 'Offline' };
             
             return `
                 <tr>
                     <td><strong>${a.username}</strong></td>
                     <td>${a.fullname || '-'}</td>
                     <td><span class="role-badge ${a.role}">${roleLabel}</span></td>
-                    <td><span class="status-badge-active">Aktif</span></td>
+                    <td>
+                        <div class="personnel-status">
+                            <span class="status-dot ${status}"></span>
+                            <span>${statusLabels[status]}</span>
+                        </div>
+                    </td>
                     <td>${dateStr}</td>
                     <td>
                         <div class="bonus-type-actions">
@@ -1757,3 +1766,117 @@ document.getElementById('personnelForm')?.addEventListener('submit', async (e) =
         showToast('Hata', 'İşlem başarısız.', 'error');
     }
 });
+
+// ============================================
+// ADMIN STATUS MANAGEMENT
+// ============================================
+
+let currentAdminStatus = 'offline';
+
+async function initAdminStatus() {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    if (!adminId) return;
+    
+    // Get current status from DB
+    const admins = await getAdmins();
+    const currentAdmin = admins.find(a => a.id === adminId);
+    if (currentAdmin) {
+        currentAdminStatus = currentAdmin.status || 'offline';
+        updateStatusUI(currentAdminStatus);
+    }
+}
+
+function updateStatusUI(status) {
+    const statusLabel = document.getElementById('statusLabel');
+    const statusBtns = document.querySelectorAll('.status-btn');
+    
+    statusBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.status === status) {
+            btn.classList.add('active');
+        }
+    });
+    
+    if (statusLabel) {
+        statusLabel.className = 'status-label ' + status;
+        if (status === 'online') {
+            statusLabel.textContent = 'Online';
+        } else if (status === 'break') {
+            statusLabel.textContent = 'Mola';
+        } else {
+            statusLabel.textContent = 'Offline';
+        }
+    }
+}
+
+async function setAdminStatus(status) {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    if (!adminId) return;
+    
+    const success = await updateAdminStatus(adminId, status);
+    if (success) {
+        currentAdminStatus = status;
+        updateStatusUI(status);
+        
+        const statusMessages = {
+            'online': 'Artık talep alabilirsiniz.',
+            'break': 'Mola modundasınız. Yeni talep atanmayacak.',
+            'offline': 'Çevrimdışısınız.'
+        };
+        showToast('Durum Güncellendi', statusMessages[status], 'info');
+        
+        // Reload personnel list if visible
+        if (document.getElementById('personnelManagementSection')?.style.display !== 'none') {
+            loadPersonnelList();
+        }
+    }
+}
+
+// Status button click handlers
+document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setAdminStatus(btn.dataset.status);
+    });
+});
+
+// Initialize status on page load
+initAdminStatus();
+
+// Update last_seen every minute when online
+setInterval(async () => {
+    if (currentAdminStatus === 'online') {
+        const adminId = localStorage.getItem('vegas_admin_id');
+        if (adminId) {
+            await updateAdmin(adminId, { last_seen: new Date().toISOString() });
+        }
+    }
+}, 60000);
+
+// Set offline when leaving page
+window.addEventListener('beforeunload', () => {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    if (adminId && currentAdminStatus === 'online') {
+        // Use sendBeacon for reliable delivery
+        navigator.sendBeacon && navigator.sendBeacon(
+            SUPABASE_URL + '/rest/v1/admins?id=eq.' + adminId,
+            JSON.stringify({ status: 'offline' })
+        );
+    }
+});
+
+// ============================================
+// REQUEST ASSIGNMENT
+// ============================================
+
+async function takeRequest(requestDbId) {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    if (!adminId) return;
+    
+    const success = await assignRequestToAdmin(requestDbId, adminId);
+    if (success) {
+        showToast('Talep Alındı', 'Talep size atandı.', 'success');
+        await loadRequests();
+    } else {
+        showToast('Hata', 'Talep atanamadı.', 'error');
+    }
+}
