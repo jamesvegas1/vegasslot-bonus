@@ -90,6 +90,7 @@ async function loadRequests() {
             bonusType: r.bonus_type,
             bonusTypeLabel: r.bonus_type_label,
             note: r.note || '',
+            adminNote: r.admin_note || '',
             timestamp: r.created_at,
             status: r.status,
             notified: r.notified
@@ -104,9 +105,9 @@ async function loadRequests() {
     }
 }
 
-async function saveRequestStatus(dbId, status) {
+async function saveRequestStatus(dbId, status, adminNote = '') {
     try {
-        await updateBonusRequestStatus(dbId, status);
+        await updateBonusRequestStatus(dbId, status, adminNote);
         await loadRequests();
     } catch (error) {
         console.error('Error saving request:', error);
@@ -891,12 +892,16 @@ function openConfirm(id, actionType) {
     }
 
     confirmModal.classList.remove('hidden');
+    // Clear admin note input
+    const noteInput = document.getElementById('adminNoteInput');
+    if (noteInput) noteInput.value = '';
 }
 
 async function rejectRequest(id) {
     const req = requests.find(r => r.id === id);
     if (req && req.dbId) {
-        await saveRequestStatus(req.dbId, 'rejected');
+        const adminNote = document.getElementById('adminNoteInput')?.value || '';
+        await saveRequestStatus(req.dbId, 'rejected', adminNote);
         showToast('Talep Reddedildi', `${id} başarıyla reddedildi.`, 'error');
         closeConfirmModal();
         closeDetailModal();
@@ -906,7 +911,8 @@ async function rejectRequest(id) {
 async function approveRequest(id) {
     const req = requests.find(r => r.id === id);
     if (req && req.dbId) {
-        await saveRequestStatus(req.dbId, 'approved');
+        const adminNote = document.getElementById('adminNoteInput')?.value || '';
+        await saveRequestStatus(req.dbId, 'approved', adminNote);
         showToast('Talep Onaylandı', `${id} başarıyla onaylandı.`, 'success');
         closeConfirmModal();
         closeDetailModal();

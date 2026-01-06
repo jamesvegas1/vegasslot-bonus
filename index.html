@@ -144,8 +144,13 @@
                 <p>Bonus talebiniz başarıyla alındı ve kısa süre içinde incelenecektir.</p>
                 <div class="queue-info">
                     <span class="queue-label">Sıra Numaranız</span>
-                    <span class="queue-number" id="queueNumber">1</span>
+                    <div class="queue-position">
+                        <span class="queue-number" id="queueNumber">1</span>
+                        <span class="queue-separator">/</span>
+                        <span class="queue-total" id="totalPending">1</span>
+                    </div>
                     <span class="queue-text">bekleyen talep arasında</span>
+                    <span class="queue-live-indicator">🔴 Canlı güncelleniyor</span>
                 </div>
                 <button id="resetBtn" class="reset-btn">Yeni Talep Oluştur</button>
             </div>

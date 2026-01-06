@@ -109,10 +109,17 @@ async function addBonusRequest(request) {
     return data;
 }
 
-async function updateBonusRequestStatus(id, status) {
+async function updateBonusRequestStatus(id, status, adminNote = '') {
+    const updateData = { 
+        status, 
+        updated_at: new Date().toISOString()
+    };
+    if (adminNote) {
+        updateData.admin_note = adminNote;
+    }
     const { error } = await supabaseClient
         .from('bonus_requests')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', id);
     return !error;
 }

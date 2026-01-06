@@ -78,8 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
             form.style.display = 'none';
             successState.classList.remove('hidden');
 
-            // 5. Show queue position
-            await updateQueueNumber();
+            // 5. Show queue position and start live updates
+            window.lastRequestId = requestId;
+            await updateQueuePosition();
+            startQueueUpdates();
         } catch (error) {
             console.error('Submit error:', error);
             alert('Hata: ' + error.message + '\n\nKonsolu kontrol edin (F12)');
@@ -89,21 +91,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Update queue number display
-    async function updateQueueNumber() {
+    // Queue update interval
+    let queueUpdateInterval = null;
+
+    // Update queue position display
+    async function updateQueuePosition() {
         try {
-            const pendingCount = await getPendingCount();
+            if (!window.lastRequestId) return;
+            
+            const allRequests = await getBonusRequests();
+            const pendingRequests = allRequests.filter(r => r.status === 'pending');
+            const myRequest = allRequests.find(r => r.request_id === window.lastRequestId);
+            
             const queueNumberEl = document.getElementById('queueNumber');
-            if (queueNumberEl) {
-                queueNumberEl.textContent = pendingCount;
+            const totalPendingEl = document.getElementById('totalPending');
+            
+            if (myRequest && myRequest.status === 'pending') {
+                // Find my position (oldest first)
+                const sortedPending = pendingRequests.sort((a, b) => 
+                    new Date(a.created_at) - new Date(b.created_at)
+                );
+                const position = sortedPending.findIndex(r => r.request_id === window.lastRequestId) + 1;
+                
+                if (queueNumberEl) queueNumberEl.textContent = position;
+                if (totalPendingEl) totalPendingEl.textContent = pendingRequests.length;
+            } else if (myRequest && myRequest.status !== 'pending') {
+                // Request was processed
+                stopQueueUpdates();
+                if (queueNumberEl) queueNumberEl.textContent = '✓';
+                showNotification(myRequest);
             }
         } catch (error) {
-            console.error('Error getting queue count:', error);
+            console.error('Error getting queue position:', error);
+        }
+    }
+
+    // Start live queue updates
+    function startQueueUpdates() {
+        stopQueueUpdates(); // Clear any existing interval
+        queueUpdateInterval = setInterval(updateQueuePosition, 5000); // Every 5 seconds
+    }
+
+    // Stop queue updates
+    function stopQueueUpdates() {
+        if (queueUpdateInterval) {
+            clearInterval(queueUpdateInterval);
+            queueUpdateInterval = null;
         }
     }
 
     // Reset Logic
     resetBtn.addEventListener('click', () => {
+        stopQueueUpdates();
+        window.lastRequestId = null;
         successState.classList.add('hidden');
         form.classList.remove('hidden');
         form.style.display = 'block';
@@ -220,6 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             ` : ''}
                         </div>
+                        ${req.admin_note ? `
+                            <div class="admin-note-display">
+                                <span class="admin-note-label">Yönetici Notu:</span>
+                                <p>${req.admin_note}</p>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
