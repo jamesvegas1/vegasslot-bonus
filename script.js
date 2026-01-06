@@ -150,6 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!window.lastRequestId) return;
             
+            // Cleanup orphaned requests first
+            await cleanupOfflineAdminRequests();
+            
             const allRequests = await getBonusRequests();
             const pendingRequests = allRequests.filter(r => r.status === 'pending');
             const myRequest = allRequests.find(r => r.request_id === window.lastRequestId);
