@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // XSS Protection
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     const form = document.getElementById('bonusForm');
     // Note field removed
     const successState = document.getElementById('successState');
@@ -354,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${req.admin_note ? `
                             <div class="admin-note-display">
                                 <span class="admin-note-label">Yönetici Notu:</span>
-                                <p>${req.admin_note}</p>
+                                <p>${escapeHtml(req.admin_note)}</p>
                             </div>
                         ` : ''}
                     </div>
@@ -443,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${request.admin_note ? `
             <div class="admin-note-box">
                 <span class="admin-note-title">Yönetici Notu:</span>
-                <p>${request.admin_note}</p>
+                <p>${escapeHtml(request.admin_note)}</p>
             </div>
             ` : ''}
         `;

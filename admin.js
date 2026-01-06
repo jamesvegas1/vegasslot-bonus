@@ -4,6 +4,14 @@ if (!localStorage.getItem('vegas_auth_token')) {
     throw new Error('Not authenticated'); // Stop script execution
 }
 
+// XSS Protection - Escape HTML entities
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // --- State ---
 let requests = [];
 let currentRequestId = null;
@@ -258,7 +266,7 @@ function updateRecentActivity() {
             <div class="activity-item">
                 <div class="activity-icon ${statusClass}">${icon}</div>
                 <div class="activity-content">
-                    <div class="activity-title">${req.username} - ${req.bonusTypeLabel || req.bonusType}</div>
+                    <div class="activity-title">${escapeHtml(req.username)} - ${req.bonusTypeLabel || req.bonusType}</div>
                     <div class="activity-meta">${statusText}</div>
                 </div>
                 <div class="activity-time">${dateStr} ${timeStr}</div>
@@ -742,7 +750,7 @@ function updateTopUsers() {
         const rate = stats.total > 0 ? ((stats.approved / stats.total) * 100).toFixed(0) : 0;
         return `
             <tr>
-                <td style="font-weight: 500; color: #fff;">${username}</td>
+                <td style="font-weight: 500; color: #fff;">${escapeHtml(username)}</td>
                 <td class="text-right">${stats.total}</td>
                 <td class="text-right success-text" style="color:#10b981">${stats.approved}</td>
                 <td class="text-right">${rate}%</td>
@@ -861,12 +869,12 @@ function renderTable() {
                 <td class="col-user">
                     <div class="user-cell">
                         <div class="avatar-sm">${req.username.substring(0, 2).toUpperCase()}</div>
-                        <span>${req.username}</span>
+                        <span>${escapeHtml(req.username)}</span>
                     </div>
                 </td>
                 <td><span class="bonus-tag ${tagClass}">${req.bonusTypeLabel}</span></td>
                 <td class="col-note">
-                    <span class="note-truncate">${noteDisplay}</span>
+                    <span class="note-truncate">${escapeHtml(noteDisplay)}</span>
                 </td>
                 <td class="col-date">${dateStr}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
@@ -1134,7 +1142,7 @@ function exportToCsv() {
             r.id,
             r.username,
             r.bonusTypeLabel || r.bonusType,
-            `"${note}"`,
+            `"${escapeHtml(note)}"`,
             date,
             status
         ].join(',');
@@ -1400,7 +1408,7 @@ async function loadAdminList() {
                 <div class="admin-avatar">${admin.username.substring(0, 2).toUpperCase()}</div>
                 <div class="admin-info">
                     <div class="admin-name">
-                        ${admin.username}
+                        ${escapeHtml(admin.username)}
                         ${isCurrentUser ? '<span class="badge-you">Sen</span>' : ''}
                         ${isSuperAdmin ? '<span class="badge-super">Süper Admin</span>' : '<span class="badge-role">' + getRoleLabel(admin.role || 'admin') + '</span>'}
                     </div>
@@ -1442,7 +1450,7 @@ function addAdmin(username, password, role = 'admin') {
     admins.push(newAdmin);
     saveAdmins(admins);
     loadAdminList();
-    showToast('Başarılı', `${username} admin olarak eklendi.`, 'success');
+    showToast('Başarılı', `${escapeHtml(username)} admin olarak eklendi.`, 'success');
     return true;
 }
 
@@ -1463,14 +1471,14 @@ async function deleteAdminUser(adminId) {
         return;
     }
 
-    if (!confirm(`${admin.username} adlı admini silmek istediğinize emin misiniz?`)) {
+    if (!confirm(`${escapeHtml(admin.username)} adlı admini silmek istediğinize emin misiniz?`)) {
         return;
     }
 
     const success = await deleteAdmin(adminId);
     if (success) {
         await loadAdminList();
-        showToast('Başarılı', `${admin.username} silindi.`, 'success');
+        showToast('Başarılı', `${escapeHtml(admin.username)} silindi.`, 'success');
     }
 }
 
@@ -1715,7 +1723,7 @@ async function loadPersonnelList() {
             
             return `
                 <tr>
-                    <td><strong>${a.username}</strong></td>
+                    <td><strong>${escapeHtml(a.username)}</strong></td>
                     <td>${a.fullname || '-'}</td>
                     <td><span class="role-badge ${a.role}">${roleLabel}</span></td>
                     <td>
