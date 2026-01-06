@@ -127,6 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Queue update interval
     let queueUpdateInterval = null;
+    let shownNotificationIds = new Set();
+    let isShowingNotification = false;
 
     // Update queue position display
     async function updateQueuePosition() {
@@ -153,7 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Request was processed
                 stopQueueUpdates();
                 if (queueNumberEl) queueNumberEl.textContent = '✓';
-                showNotification(myRequest);
+                // Only show if not already shown
+                if (!shownNotificationIds.has(myRequest.request_id)) {
+                    shownNotificationIds.add(myRequest.request_id);
+                    await markRequestNotified(myRequest.request_id);
+                    showNotification(myRequest);
+                }
             }
         } catch (error) {
             console.error('Error getting queue position:', error);
@@ -315,6 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Notification System ---
     async function checkNotifications() {
+        if (isShowingNotification) return;
+        
         try {
             const { data: unnotified, error } = await supabaseClient
                 .from('bonus_requests')
@@ -327,8 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
 
             if (unnotified && unnotified.length > 0) {
-                showNotification(unnotified[0]);
-                await markRequestNotified(unnotified[0].request_id);
+                const req = unnotified[0];
+                // Skip if already shown in this session
+                if (shownNotificationIds.has(req.request_id)) return;
+                
+                shownNotificationIds.add(req.request_id);
+                await markRequestNotified(req.request_id);
+                showNotification(req);
             }
         } catch (error) {
             console.error('Notification check error:', error);
@@ -336,6 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNotification(request) {
+        if (isShowingNotification) return;
+        isShowingNotification = true;
+        
         const modal = document.getElementById('notificationModal');
         const icon = document.getElementById('notifIcon');
         const title = document.getElementById('notifTitle');
@@ -389,13 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close button
         closeBtn.onclick = () => {
             modal.classList.add('hidden');
-            setTimeout(checkNotifications, 300);
+            isShowingNotification = false;
+            // Don't auto-check for more notifications
         };
 
         // Close on backdrop click
         modal.querySelector('.notification-backdrop').onclick = () => {
             modal.classList.add('hidden');
-            setTimeout(checkNotifications, 300);
+            isShowingNotification = false;
         };
     }
 });
