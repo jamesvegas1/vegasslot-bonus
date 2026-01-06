@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bonusSelect = document.getElementById('bonusType');
     const bonusHelper = document.getElementById('bonusHelper');
 
-    // Check for notifications on page load
-    checkNotifications();
+    // Don't auto-check notifications on page load
+    // Notifications will show when user queries their status
 
     // Char Count Logic
     noteInput.addEventListener('input', () => {
@@ -332,10 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="detail-value">${request.request_id}</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Kullanıcı</span>
-                <span class="detail-value">${request.username}</span>
-            </div>
-            <div class="detail-row">
                 <span class="detail-label">Bonus Türü</span>
                 <span class="detail-value">${request.bonus_type_label || request.bonus_type}</span>
             </div>
@@ -343,6 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="detail-label">Talep Tarihi</span>
                 <span class="detail-value">${date.toLocaleDateString('tr-TR')} ${date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}</span>
             </div>
+            ${request.admin_note ? `
+            <div class="admin-note-box">
+                <span class="admin-note-title">Yönetici Notu:</span>
+                <p>${request.admin_note}</p>
+            </div>
+            ` : ''}
         `;
 
         // Set button style

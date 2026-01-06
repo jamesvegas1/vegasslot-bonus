@@ -1152,3 +1152,28 @@ textarea::placeholder {
     50% { opacity: 0.5; }
 }
 
+
+/* Admin Note Box in Notification Modal */
+.admin-note-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+}
+
+.admin-note-title {
+    display: block;
+    font-size: 0.8rem;
+    color: #f59e0b;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.admin-note-box p {
+    margin: 0;
+    color: #e5e7eb;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+

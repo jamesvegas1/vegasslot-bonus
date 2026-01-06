@@ -62,8 +62,30 @@ let peakHoursChart = null;
     await loadRequests();
     handleNavigation('dashboard');
 })();
-// Auto-refresh every 5 seconds to catch new requests
-setInterval(loadRequests, 5000);
+// Auto-refresh every 30 seconds to catch new requests
+let lastPendingCount = 0;
+
+// Notification sound function
+function playNotificationSound() {
+    try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAQOaLvg3qNeDgpPmNXfq20RCTuHy9u1fRwKLnS/2MKKJgshZq7VyZgtDBdao9HQmjYQEk+Xzdi+TSEKNXe83tOaMgwgXKLN2bFBGQs1c7ndz5Q0EBpSnc7aoEQZDTJxttzNkjQQGVGbzdqfRRoNMXC13MyRNRAZUZvN2p9FGg0x');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+    } catch (e) {}
+}
+
+setInterval(async () => {
+    const previousCount = lastPendingCount;
+    await loadRequests();
+    
+    // Check for new requests and play sound
+    const currentPending = requests.filter(r => r.status === 'pending').length;
+    if (previousCount > 0 && currentPending > previousCount) {
+        playNotificationSound();
+        showToast('Yeni Talep!', 'Yeni bir bonus talebi geldi.', 'info');
+    }
+    lastPendingCount = currentPending;
+}, 30000);
 
 // --- Logout ---
 if (logoutBtn) {
