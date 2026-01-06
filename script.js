@@ -111,6 +111,21 @@ document.addEventListener('DOMContentLoaded', () => {
             form.classList.add('hidden');
             form.style.display = 'none';
             successState.classList.remove('hidden');
+            
+            // Reset queue-info to initial state (in case it was modified by previous request)
+            const queueInfoEl = document.querySelector('.queue-info');
+            if (queueInfoEl) {
+                queueInfoEl.innerHTML = 
+                    '<span class="queue-label">Sıra Numaranız</span>' +
+                    '<div class="queue-position">' +
+                        '<span class="queue-number" id="queueNumber">...</span>' +
+                        '<span class="queue-separator">/</span>' +
+                        '<span class="queue-total" id="totalPending">...</span>' +
+                    '</div>' +
+                    '<span class="queue-text">bekleyen talep arasında</span>' +
+                    '<span class="queue-live-indicator">🔴 Canlı güncelleniyor</span>';
+                queueInfoEl.style.borderColor = '';
+            }
 
             // 5. Show queue position and start live updates
             window.lastRequestId = requestId;
