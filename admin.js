@@ -65,12 +65,35 @@ let peakHoursChart = null;
 // Auto-refresh every 30 seconds to catch new requests
 let lastPendingCount = 0;
 
-// Notification sound function
+// Notification sound function - pleasant chime
 function playNotificationSound() {
     try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAQOaLvg3qNeDgpPmNXfq20RCTuHy9u1fRwKLnS/2MKKJgshZq7VyZgtDBdao9HQmjYQEk+Xzdi+TSEKNXe83tOaMgwgXKLN2bFBGQs1c7ndz5Q0EBpSnc7aoEQZDTJxttzNkjQQGVGbzdqfRRoNMXC13MyRNRAZUZvN2p9FGg0x');
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // First chime note (G#5)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.frequency.value = 830;
+        osc1.type = 'sine';
+        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.5);
+        
+        // Second chime note (C6 - delayed)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.frequency.value = 1046;
+        osc2.type = 'sine';
+        gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.55);
+        osc2.start(audioCtx.currentTime + 0.12);
+        osc2.stop(audioCtx.currentTime + 0.55);
     } catch (e) {}
 }
 
