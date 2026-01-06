@@ -367,3 +367,59 @@ async function cleanupOfflineAdminRequests() {
         console.error('Error cleaning up offline requests:', error);
     }
 }
+
+// ============================================
+// SECURE LOGIN - supports both hash and legacy plain-text
+// ============================================
+async function validateLoginSecure(username, passwordHash, plainPassword) {
+    const admin = await getAdminByUsername(username);
+    if (!admin) return null;
+    
+    // Check if password is already hashed (64 char hex = SHA-256)
+    const isHashed = admin.password && admin.password.length === 64 && /^[a-f0-9]+$/.test(admin.password);
+    
+    if (isHashed) {
+        // Compare hashes
+        if (admin.password === passwordHash) {
+            return admin;
+        }
+    } else {
+        // Legacy plain-text comparison (for migration)
+        if (admin.password === plainPassword) {
+            // Auto-migrate: Update to hashed password
+            await supabaseClient
+                .from('admins')
+                .update({ password: passwordHash })
+                .eq('id', admin.id);
+            console.log('Password migrated to hash for user:', username);
+            return admin;
+        }
+    }
+    
+    return null;
+}
+
+// Add admin with hashed password
+async function addAdminSecure(username, password, role = 'admin') {
+    const passwordHash = await hashPassword(password);
+    const { data, error } = await supabaseClient
+        .from('admins')
+        .insert([{ username, password: passwordHash, role, is_default: false }])
+        .select()
+        .single();
+    if (error) {
+        console.error('Error adding admin:', error);
+        return null;
+    }
+    return data;
+}
+
+// Update password with hash
+async function updateAdminPasswordSecure(id, newPassword) {
+    const passwordHash = await hashPassword(newPassword);
+    const { error } = await supabaseClient
+        .from('admins')
+        .update({ password: passwordHash })
+        .eq('id', id);
+    return !error;
+}

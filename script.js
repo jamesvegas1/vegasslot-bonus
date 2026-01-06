@@ -72,9 +72,19 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 1. Get Values
-        const username = document.getElementById('username').value.trim();
-        const bonusType = document.getElementById('bonusType').value;
+        // 1. Get Values & Sanitize
+        const rawUsername = document.getElementById('username').value.trim();
+        const username = sanitizeInput(rawUsername);
+        const bonusType = sanitizeInput(document.getElementById('bonusType').value);
+        
+        // Validate username format
+        if (!validateUsername(username)) {
+            alert('Kullanıcı adı sadece harf, rakam, alt çizgi, tire ve nokta içerebilir (3-30 karakter).');
+            submitBtn.disabled = false;
+            btnText.style.opacity = '1';
+            loader.classList.add('hidden');
+            return;
+        }
         const bonusTypeLabel = document.getElementById('bonusType').options[document.getElementById('bonusType').selectedIndex].text;
         // Note field removed
 
@@ -285,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchStatus() {
-        const username = statusUsername.value.trim().toLowerCase();
+        const username = sanitizeInput(statusUsername.value.trim().toLowerCase());
         if (!username) {
             alert('Lütfen kullanıcı adınızı girin.');
             return;

@@ -1493,7 +1493,7 @@ if (addAdminForm) {
             return;
         }
 
-        const result = await addAdmin(username, password, role);
+        const result = await addAdminSecure(username, password, role);
         if (result) {
             addAdminForm.reset();
             showToast('Başarılı', username + ' eklendi.', 'success');
@@ -1540,7 +1540,7 @@ if (profileForm) {
 
         // Update password via Supabase
         const adminId = localStorage.getItem('vegas_admin_id');
-        const success = await updateAdminPassword(adminId, newPassword);
+        const success = await updateAdminPasswordSecure(adminId, newPassword);
         if (success) {
             profileForm.reset();
             showToast('Başarılı', 'Şifreniz güncellendi.', 'success');
@@ -1832,7 +1832,7 @@ document.getElementById('personnelForm')?.addEventListener('submit', async (e) =
             showToast('Hata', 'Yeni personel için şifre zorunludur.', 'error');
             return;
         }
-        success = await addAdmin(username, password, role);
+        success = await addAdminSecure(username, password, role);
         if (success && fullname) {
             await updateAdmin(success.id, { fullname });
         }
