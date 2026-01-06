@@ -119,18 +119,61 @@ setInterval(async () => {
     lastPendingCount = currentPending;
 }, 5000);
 
-// --- Logout ---
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-        if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
-            localStorage.removeItem('vegas_auth_token');
-            localStorage.removeItem('vegas_admin_user');
-            localStorage.removeItem('vegas_admin_role');
-            localStorage.removeItem('vegas_admin_id');
-            window.location.href = 'login.html';
-        }
-    });
+// --- Logout Modal ---
+const logoutModal = document.getElementById('logoutModal');
+const logoutCancelBtn = document.getElementById('logoutCancelBtn');
+const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+
+function showLogoutModal() {
+    if (logoutModal) {
+        logoutModal.classList.remove('hidden');
+    }
 }
+
+function hideLogoutModal() {
+    if (logoutModal) {
+        logoutModal.classList.add('hidden');
+    }
+}
+
+function performLogout() {
+    // Set status to offline before logout
+    const adminId = localStorage.getItem('vegas_admin_id');
+    if (adminId) {
+        updateAdminStatus(adminId, 'offline');
+    }
+    
+    localStorage.removeItem('vegas_auth_token');
+    localStorage.removeItem('vegas_admin_user');
+    localStorage.removeItem('vegas_admin_role');
+    localStorage.removeItem('vegas_admin_id');
+    localStorage.removeItem('vegas_admin_status');
+    window.location.href = 'login.html';
+}
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', showLogoutModal);
+}
+
+if (logoutCancelBtn) {
+    logoutCancelBtn.addEventListener('click', hideLogoutModal);
+}
+
+if (logoutConfirmBtn) {
+    logoutConfirmBtn.addEventListener('click', performLogout);
+}
+
+// Close modal on backdrop click
+if (logoutModal) {
+    logoutModal.querySelector('.logout-modal-backdrop').addEventListener('click', hideLogoutModal);
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && logoutModal && !logoutModal.classList.contains('hidden')) {
+        hideLogoutModal();
+    }
+});
 
 // --- Logic ---
 

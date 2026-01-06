@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetim Paneli | VegasSlot</title>
-    <link rel="stylesheet" href="admin.css?v=5">
+    <link rel="stylesheet" href="admin.css?v=6">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -838,10 +838,30 @@
     <!-- Toast Container -->
     <div class="toast-container"></div>
 
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="logout-modal hidden">
+        <div class="logout-modal-backdrop"></div>
+        <div class="logout-modal-content">
+            <div class="logout-modal-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </div>
+            <h3 class="logout-modal-title">Çıkış Yap</h3>
+            <p class="logout-modal-text">Oturumunuzu kapatmak istediğinize emin misiniz?</p>
+            <div class="logout-modal-actions">
+                <button id="logoutCancelBtn" class="logout-btn-cancel">İptal</button>
+                <button id="logoutConfirmBtn" class="logout-btn-confirm">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="security.js"></script>
     <script src="supabase.js?v=3"></script>
-    <script src="admin.js?v=12"></script>
+    <script src="admin.js?v=13"></script>
 </body>
 
 </html>
