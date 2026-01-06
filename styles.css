@@ -1177,3 +1177,36 @@ textarea::placeholder {
     line-height: 1.5;
 }
 
+
+/* Rate Limit Warning */
+.rate-limit-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.rate-limit-warning.hidden {
+    display: none;
+}
+
+.warning-icon {
+    font-size: 1.5rem;
+}
+
+.warning-text strong {
+    color: #ef4444;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.warning-text p {
+    margin: 0;
+    color: #9ca3af;
+    font-size: 0.9rem;
+}
+

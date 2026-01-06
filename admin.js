@@ -1123,11 +1123,15 @@ function handleNavigation(view) {
     const dashboardWidgets = document.getElementById('dashboardWidgets');
 
     const settingsSection = document.getElementById('settingsSection');
+    const bonusManagementSection = document.getElementById('bonusManagementSection');
+    const personnelManagementSection = document.getElementById('personnelManagementSection');
 
     // Reset All Views First
     if (statsGrid) statsGrid.style.display = 'none';
     if (dashboardWidgets) dashboardWidgets.style.display = 'none';
     if (settingsSection) settingsSection.style.display = 'none';
+    if (bonusManagementSection) bonusManagementSection.style.display = 'none';
+    if (personnelManagementSection) personnelManagementSection.style.display = 'none';
     if (analyticsSection) {
         analyticsSection.classList.add('hidden');
         analyticsSection.style.display = 'none';
@@ -1177,6 +1181,20 @@ function handleNavigation(view) {
         if (settingsSection) {
             settingsSection.style.display = 'grid';
             loadAdminList();
+        }
+    } else if (view === 'bonusManagement') {
+        if (pageTitle) pageTitle.textContent = 'Bonus Yönetimi';
+        const bonusManagementSection = document.getElementById('bonusManagementSection');
+        if (bonusManagementSection) {
+            bonusManagementSection.style.display = 'block';
+            loadBonusTypesList();
+        }
+    } else if (view === 'personnelManagement') {
+        if (pageTitle) pageTitle.textContent = 'Personel Yönetimi';
+        const personnelManagementSection = document.getElementById('personnelManagementSection');
+        if (personnelManagementSection) {
+            personnelManagementSection.style.display = 'block';
+            loadPersonnelList();
         }
     }
 }
@@ -1449,3 +1467,293 @@ if (profileForm) {
         }
     });
 }
+
+// ============================================
+// BONUS MANAGEMENT
+// ============================================
+
+async function loadBonusTypesList() {
+    const container = document.getElementById('bonusTypesList');
+    if (!container) return;
+    
+    try {
+        const types = await getAllBonusTypes();
+        
+        if (types.length === 0) {
+            container.innerHTML = '<div class="empty-state">Henüz bonus türü yok.</div>';
+            return;
+        }
+        
+        container.innerHTML = types.map(t => `
+            <div class="bonus-type-item" data-id="${t.id}">
+                <div class="bonus-type-info">
+                    <span class="bonus-type-icon">${t.icon || '🎁'}</span>
+                    <div>
+                        <div class="bonus-type-name">${t.label}</div>
+                        <div class="bonus-type-code">${t.name}</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="bonus-type-status ${t.is_active ? 'active' : 'inactive'}">
+                        ${t.is_active ? 'Aktif' : 'Pasif'}
+                    </span>
+                    <div class="bonus-type-actions">
+                        <button class="btn-icon view" onclick="toggleBonusStatus('${t.id}', ${!t.is_active})" title="${t.is_active ? 'Pasifleştir' : 'Aktifleştir'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="btn-icon edit" onclick="editBonusType('${t.id}')" title="Düzenle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon delete" onclick="deleteBonusTypeItem('${t.id}')" title="Sil">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Error loading bonus types:', e);
+        container.innerHTML = '<div class="empty-state">Yüklenirken hata oluştu.</div>';
+    }
+}
+
+let bonusTypesCache = [];
+
+async function editBonusType(id) {
+    const types = await getAllBonusTypes();
+    const type = types.find(t => t.id === id);
+    if (!type) return;
+    
+    document.getElementById('bonusModalTitle').textContent = 'Bonus Düzenle';
+    document.getElementById('bonusTypeId').value = id;
+    document.getElementById('bonusTypeName').value = type.name;
+    document.getElementById('bonusTypeLabel').value = type.label;
+    document.getElementById('bonusTypeIcon').value = type.icon || '';
+    document.getElementById('bonusTypeDesc').value = type.description || '';
+    document.getElementById('bonusTypeActive').checked = type.is_active;
+    
+    document.getElementById('bonusModal').classList.remove('hidden');
+}
+
+async function toggleBonusStatus(id, newStatus) {
+    const success = await updateBonusType(id, { is_active: newStatus });
+    if (success) {
+        showToast('Başarılı', 'Bonus durumu güncellendi.', 'success');
+        loadBonusTypesList();
+    }
+}
+
+async function deleteBonusTypeItem(id) {
+    if (!confirm('Bu bonus türünü silmek istediğinize emin misiniz?')) return;
+    
+    const success = await deleteBonusType(id);
+    if (success) {
+        showToast('Başarılı', 'Bonus türü silindi.', 'success');
+        loadBonusTypesList();
+    } else {
+        showToast('Hata', 'Silinemedi.', 'error');
+    }
+}
+
+// Bonus Modal Events
+document.getElementById('addBonusTypeBtn')?.addEventListener('click', () => {
+    document.getElementById('bonusModalTitle').textContent = 'Yeni Bonus Ekle';
+    document.getElementById('bonusTypeForm').reset();
+    document.getElementById('bonusTypeId').value = '';
+    document.getElementById('bonusTypeActive').checked = true;
+    document.getElementById('bonusModal').classList.remove('hidden');
+});
+
+document.getElementById('closeBonusModal')?.addEventListener('click', () => {
+    document.getElementById('bonusModal').classList.add('hidden');
+});
+
+document.getElementById('bonusTypeForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('bonusTypeId').value;
+    const name = document.getElementById('bonusTypeName').value.trim();
+    const label = document.getElementById('bonusTypeLabel').value.trim();
+    const icon = document.getElementById('bonusTypeIcon').value.trim() || '🎁';
+    const description = document.getElementById('bonusTypeDesc').value.trim();
+    const isActive = document.getElementById('bonusTypeActive').checked;
+    
+    if (!name || !label) {
+        showToast('Hata', 'Ad ve görünen ad zorunludur.', 'error');
+        return;
+    }
+    
+    let success;
+    if (id) {
+        success = await updateBonusType(id, { name, label, icon, description, is_active: isActive });
+    } else {
+        success = await addBonusType(name, label, icon, description);
+    }
+    
+    if (success) {
+        showToast('Başarılı', id ? 'Bonus güncellendi.' : 'Bonus eklendi.', 'success');
+        document.getElementById('bonusModal').classList.add('hidden');
+        loadBonusTypesList();
+    } else {
+        showToast('Hata', 'İşlem başarısız.', 'error');
+    }
+});
+
+// ============================================
+// PERSONNEL MANAGEMENT
+// ============================================
+
+async function loadPersonnelList() {
+    const tbody = document.getElementById('personnelTableBody');
+    if (!tbody) return;
+    
+    try {
+        const admins = await getAdmins();
+        
+        if (admins.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Henüz personel yok.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = admins.map(a => {
+            const date = new Date(a.created_at);
+            const dateStr = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+            const roleLabel = a.role === 'admin' ? 'Admin' : 'Senior Agent';
+            
+            return `
+                <tr>
+                    <td><strong>${a.username}</strong></td>
+                    <td>${a.fullname || '-'}</td>
+                    <td><span class="role-badge ${a.role}">${roleLabel}</span></td>
+                    <td><span class="status-badge-active">Aktif</span></td>
+                    <td>${dateStr}</td>
+                    <td>
+                        <div class="bonus-type-actions">
+                            <button class="btn-icon edit" onclick="editPersonnel('${a.id}')" title="Düzenle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            ${!a.is_default ? `
+                            <button class="btn-icon delete" onclick="deletePersonnel('${a.id}')" title="Sil">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading personnel:', e);
+    }
+}
+
+let personnelCache = [];
+
+async function editPersonnel(id) {
+    const admins = await getAdmins();
+    const person = admins.find(a => a.id === id);
+    if (!person) return;
+    
+    document.getElementById('personnelModalTitle').textContent = 'Personel Düzenle';
+    document.getElementById('personnelId').value = id;
+    document.getElementById('personnelUsername').value = person.username;
+    document.getElementById('personnelUsername').disabled = true;
+    document.getElementById('personnelFullname').value = person.fullname || '';
+    document.getElementById('personnelPassword').value = '';
+    document.getElementById('personnelPassword').placeholder = 'Değiştirmek için yeni şifre girin';
+    document.getElementById('personnelRole').value = person.role;
+    
+    document.getElementById('personnelModal').classList.remove('hidden');
+}
+
+async function deletePersonnel(id) {
+    const admins = await getAdmins();
+    const person = admins.find(a => a.id === id);
+    if (!person) return;
+    
+    if (person.is_default) {
+        showToast('Hata', 'Varsayılan admin silinemez.', 'error');
+        return;
+    }
+    
+    if (!confirm(`${person.username} adlı personeli silmek istediğinize emin misiniz?`)) return;
+    
+    const success = await deleteAdmin(id);
+    if (success) {
+        showToast('Başarılı', 'Personel silindi.', 'success');
+        loadPersonnelList();
+    } else {
+        showToast('Hata', 'Silinemedi.', 'error');
+    }
+}
+
+// Personnel Modal Events
+document.getElementById('addPersonnelBtn')?.addEventListener('click', () => {
+    document.getElementById('personnelModalTitle').textContent = 'Yeni Personel Ekle';
+    document.getElementById('personnelForm').reset();
+    document.getElementById('personnelId').value = '';
+    document.getElementById('personnelUsername').disabled = false;
+    document.getElementById('personnelPassword').placeholder = 'Zorunlu';
+    document.getElementById('personnelModal').classList.remove('hidden');
+});
+
+document.getElementById('closePersonnelModal')?.addEventListener('click', () => {
+    document.getElementById('personnelModal').classList.add('hidden');
+});
+
+document.getElementById('personnelForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('personnelId').value;
+    const username = document.getElementById('personnelUsername').value.trim();
+    const fullname = document.getElementById('personnelFullname').value.trim();
+    const password = document.getElementById('personnelPassword').value;
+    const role = document.getElementById('personnelRole').value;
+    
+    if (!username) {
+        showToast('Hata', 'Kullanıcı adı zorunludur.', 'error');
+        return;
+    }
+    
+    let success;
+    if (id) {
+        // Update existing
+        const updates = { role };
+        if (fullname) updates.fullname = fullname;
+        if (password) updates.password = password;
+        success = await updateAdmin(id, updates);
+    } else {
+        // Create new
+        if (!password) {
+            showToast('Hata', 'Yeni personel için şifre zorunludur.', 'error');
+            return;
+        }
+        success = await addAdmin(username, password, role);
+        if (success && fullname) {
+            await updateAdmin(success.id, { fullname });
+        }
+    }
+    
+    if (success) {
+        showToast('Başarılı', id ? 'Personel güncellendi.' : 'Personel eklendi.', 'success');
+        document.getElementById('personnelModal').classList.add('hidden');
+        loadPersonnelList();
+    } else {
+        showToast('Hata', 'İşlem başarısız.', 'error');
+    }
+});

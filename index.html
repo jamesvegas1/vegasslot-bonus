@@ -70,18 +70,7 @@
                             </svg>
                         </span>
                         <select id="bonusType" name="bonusType" required>
-                            <option value="" disabled selected>Bonus Seçiniz</option>
-                            <option value="welcome_casino">Hoş Geldin Casino Bonusu</option>
-                            <option value="welcome_sport">Hoş Geldin Spor Bonusu</option>
-                            <option value="pragmatic_slot">%100 Pragmatic Slot Bonusu</option>
-                            <option value="compensation">Telafi Bonusu</option>
-                            <option value="sport_return_50">%50 Spor İade</option>
-                            <option value="sport_loss_20">%20 Spor Kayıp</option>
-                            <option value="cashback_20">%20 Nakit İade</option>
-                            <option value="weekly_loss_10">%10 Haftalık Kayıp Bonusu</option>
-                            <option value="birthday">Doğum Günü Bonusu</option>
-                            <option value="chance_jest">Şans - Jest Bonusu</option>
-                            <option value="freespin">Freespin</option>
+                            <option value="" disabled selected>Yükleniyor...</option>
                         </select>
                     </div>
                     <div id="bonusHelper" class="input-helper hidden">
@@ -89,21 +78,13 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="note">Talep Notu <span class="optional">(İsteğe bağlı)</span></label>
-                    <div class="input-wrapper textarea-wrapper">
-                        <span class="input-icon top-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </span>
-                        <textarea id="note" name="note"
-                            placeholder="Neden bu bonus için uygun olduğunuzu kısaca açıklayın" maxlength="250"
-                            rows="3"></textarea>
+                <!-- Rate Limit Warning -->
+                <div id="rateLimitWarning" class="rate-limit-warning hidden">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-text">
+                        <strong>Bekleyen talebiniz var!</strong>
+                        <p>Mevcut talebiniz işleme alınana kadar yeni talep oluşturamazsınız.</p>
                     </div>
-                    <div class="char-count">0 / 250</div>
                 </div>
 
                 <div class="info-box">

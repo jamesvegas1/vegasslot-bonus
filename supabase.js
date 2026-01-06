@@ -149,3 +149,84 @@ async function validateLogin(username, password) {
     }
     return null;
 }
+
+// BONUS TYPES
+async function getBonusTypes() {
+    const { data, error } = await supabaseClient
+        .from('bonus_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+    if (error) {
+        console.error('Error fetching bonus types:', error);
+        return [];
+    }
+    return data;
+}
+
+async function getAllBonusTypes() {
+    const { data, error } = await supabaseClient
+        .from('bonus_types')
+        .select('*')
+        .order('sort_order', { ascending: true });
+    if (error) return [];
+    return data;
+}
+
+async function addBonusType(name, label, icon = '🎁', description = '') {
+    const { data: existing } = await supabaseClient
+        .from('bonus_types')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1);
+    
+    const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 1;
+    
+    const { data, error } = await supabaseClient
+        .from('bonus_types')
+        .insert([{ name, label, icon, description, sort_order: nextOrder }])
+        .select()
+        .single();
+    if (error) {
+        console.error('Error adding bonus type:', error);
+        return null;
+    }
+    return data;
+}
+
+async function updateBonusType(id, updates) {
+    const { error } = await supabaseClient
+        .from('bonus_types')
+        .update(updates)
+        .eq('id', id);
+    return !error;
+}
+
+async function deleteBonusType(id) {
+    const { error } = await supabaseClient
+        .from('bonus_types')
+        .delete()
+        .eq('id', id);
+    return !error;
+}
+
+// Check if user has pending request (rate limit)
+async function checkUserHasPendingRequest(username) {
+    const { data, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('id')
+        .ilike('username', username)
+        .eq('status', 'pending')
+        .limit(1);
+    if (error) return false;
+    return data && data.length > 0;
+}
+
+// Update admin details
+async function updateAdmin(id, updates) {
+    const { error } = await supabaseClient
+        .from('admins')
+        .update(updates)
+        .eq('id', id);
+    return !error;
+}

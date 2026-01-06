@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('bonusForm');
-    const noteInput = document.getElementById('note');
-    const charCount = document.querySelector('.char-count');
+    // Note field removed
     const successState = document.getElementById('successState');
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.querySelector('.btn-text');
@@ -13,18 +12,54 @@ document.addEventListener('DOMContentLoaded', () => {
     // Don't auto-check notifications on page load
     // Notifications will show when user queries their status
 
-    // Char Count Logic
-    noteInput.addEventListener('input', () => {
-        const len = noteInput.value.length;
-        charCount.textContent = `${len} / 250`;
-
-        charCount.classList.remove('limit-near', 'limit-reached');
-        if (len >= 250) {
-            charCount.classList.add('limit-reached');
-        } else if (len >= 200) {
-            charCount.classList.add('limit-near');
-        }
+    // Load bonus types and check rate limit on page load
+    loadBonusTypes();
+    
+    // Rate limit elements
+    const rateLimitWarning = document.getElementById('rateLimitWarning');
+    const usernameInput = document.getElementById('username');
+    
+    // Check rate limit when username changes
+    let rateLimitTimeout;
+    usernameInput.addEventListener('input', () => {
+        clearTimeout(rateLimitTimeout);
+        rateLimitTimeout = setTimeout(async () => {
+            const username = usernameInput.value.trim();
+            if (username.length >= 3) {
+                await checkRateLimit(username);
+            }
+        }, 500);
     });
+    
+    async function loadBonusTypes() {
+        try {
+            const types = await getBonusTypes();
+            bonusSelect.innerHTML = '<option value="" disabled selected>Bonus Seçiniz</option>';
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.textContent = t.icon + ' ' + t.label;
+                bonusSelect.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Error loading bonus types:', e);
+        }
+    }
+    
+    async function checkRateLimit(username) {
+        try {
+            const hasPending = await checkUserHasPendingRequest(username);
+            if (hasPending) {
+                rateLimitWarning.classList.remove('hidden');
+                submitBtn.disabled = true;
+            } else {
+                rateLimitWarning.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        } catch (e) {
+            console.error('Rate limit check error:', e);
+        }
+    }
 
     // Dropdown Helper Logic
     bonusSelect.addEventListener('change', () => {
@@ -41,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('username').value.trim();
         const bonusType = document.getElementById('bonusType').value;
         const bonusTypeLabel = document.getElementById('bonusType').options[document.getElementById('bonusType').selectedIndex].text;
-        const note = document.getElementById('note').value.trim();
+        // Note field removed
 
         if (!username || !bonusType) return;
 
@@ -58,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 username: username,
                 bonusType: bonusType,
                 bonusTypeLabel: bonusTypeLabel,
-                note: note,
                 timestamp: new Date().toISOString(),
                 status: 'pending'
             };
@@ -151,8 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset UI Elements
         bonusHelper.classList.add('hidden');
-        charCount.textContent = '0 / 250';
-        charCount.classList.remove('limit-near', 'limit-reached');
+        rateLimitWarning.classList.add('hidden');
 
         // Reset Button
         submitBtn.disabled = false;
