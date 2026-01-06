@@ -182,13 +182,24 @@ function updateDashboardWidgets() {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
+    // Get current admin info for filtering
+    const currentAdminId = localStorage.getItem('vegas_admin_id');
+    const currentStatus = localStorage.getItem('vegas_admin_status') || 'online';
+    
     // Today's data
     const todayRequests = requests.filter(r => {
         if (!r.timestamp) return false;
         return new Date(r.timestamp).getTime() >= startOfToday;
     });
 
-    const todayPending = todayRequests.filter(r => r.status === 'pending').length;
+    // Pending count - only count requests visible to current admin
+    let todayPending = 0;
+    if (currentStatus === 'online') {
+        todayPending = todayRequests.filter(r => {
+            if (r.status !== 'pending') return false;
+            return !r.assignedTo || r.assignedTo === currentAdminId;
+        }).length;
+    }
     const todayApproved = todayRequests.filter(r => r.status === 'approved').length;
     const todayRejected = todayRequests.filter(r => r.status === 'rejected').length;
 
