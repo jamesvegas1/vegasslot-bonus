@@ -261,10 +261,23 @@ function updateStats() {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
 
-    // Pending Count
-    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    // Pending Count - Only count requests visible to current admin
+    const currentAdminId = localStorage.getItem('vegas_admin_id');
+    const currentStatus = localStorage.getItem('vegas_admin_status') || 'online';
+    
+    let pendingCount = 0;
+    if (currentStatus === 'online') {
+        pendingCount = requests.filter(r => {
+            if (r.status !== 'pending') return false;
+            // Count only if assigned to me or unassigned
+            return !r.assignedTo || r.assignedTo === currentAdminId;
+        }).length;
+    }
     if (statPendingIndex) statPendingIndex.textContent = pendingCount;
-    if (statPendingBadge) statPendingBadge.textContent = pendingCount;
+    if (statPendingBadge) {
+        statPendingBadge.textContent = pendingCount;
+        statPendingBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+    }
 
     // Update Dashboard Widgets
     updateDashboardWidgets();
