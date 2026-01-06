@@ -102,9 +102,22 @@ if (logoutBtn) {
 
 // --- Logic ---
 
+
 async function loadRequests() {
     try {
-        const data = await getBonusRequests();
+        let data = await getBonusRequests();
+        
+        // Auto-assign unassigned pending requests to online admins
+        const currentAdminId = localStorage.getItem('vegas_admin_id');
+        const unassignedPending = data.filter(r => r.status === 'pending' && !r.assigned_to);
+        if (unassignedPending.length > 0) {
+            for (const req of unassignedPending) {
+                await autoAssignRequest(req.id);
+            }
+            // Reload to get updated assignments
+            data = await getBonusRequests();
+        }
+        
         requests = data.map(r => ({
             id: r.request_id,
             dbId: r.id,
@@ -701,8 +714,21 @@ function renderTable() {
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
-    // Filter Logic
-    let filtered = requests;
+    // Get current admin ID and status
+    const currentAdminId = localStorage.getItem('vegas_admin_id');
+    const currentAdminStatus = localStorage.getItem('vegas_admin_status') || 'online';
+
+    // Filter Logic based on admin status
+    let filtered = requests.filter(req => {
+        // Show all non-pending (approved/rejected) for history
+        if (req.status !== 'pending') return true;
+        
+        // If admin is offline or on break, don't show pending requests
+        if (currentAdminStatus === 'offline' || currentAdminStatus === 'break') return false;
+        
+        // Online: Show pending if assigned to me or unassigned
+        return !req.assignedTo || req.assignedTo === currentAdminId;
+    });
 
     // Search
     if (searchInput && searchInput.value) {
@@ -1782,6 +1808,7 @@ async function initAdminStatus() {
     const currentAdmin = admins.find(a => a.id === adminId);
     if (currentAdmin) {
         currentAdminStatus = currentAdmin.status || 'offline';
+        localStorage.setItem('vegas_admin_status', currentAdminStatus);
         updateStatusUI(currentAdminStatus);
     }
 }
@@ -1816,7 +1843,9 @@ async function setAdminStatus(status) {
     const success = await updateAdminStatus(adminId, status);
     if (success) {
         currentAdminStatus = status;
+        localStorage.setItem('vegas_admin_status', status);
         updateStatusUI(status);
+        renderTable(); // Refresh to apply status filter
         
         const statusMessages = {
             'online': 'Artık talep alabilirsiniz.',
