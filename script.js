@@ -168,25 +168,28 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!window.lastRequestId) return;
             
-            // Cleanup orphaned requests first
-            await cleanupOfflineAdminRequests();
+            // Get active pending requests (only those assigned to online admins or unassigned)
+            const activePendingRequests = await getActivePendingRequests();
             
+            // Get my request status
             const allRequests = await getBonusRequests();
-            const pendingRequests = allRequests.filter(r => r.status === 'pending');
             const myRequest = allRequests.find(r => r.request_id === window.lastRequestId);
             
             const queueNumberEl = document.getElementById('queueNumber');
             const totalPendingEl = document.getElementById('totalPending');
             
             if (myRequest && myRequest.status === 'pending') {
-                // Find my position (oldest first)
-                const sortedPending = pendingRequests.sort((a, b) => 
+                // Find my position among active pending requests (oldest first)
+                const sortedPending = activePendingRequests.sort((a, b) => 
                     new Date(a.created_at) - new Date(b.created_at)
                 );
                 const position = sortedPending.findIndex(r => r.request_id === window.lastRequestId) + 1;
                 
-                if (queueNumberEl) queueNumberEl.textContent = position;
-                if (totalPendingEl) totalPendingEl.textContent = pendingRequests.length;
+                // If my request is not in active pending (assigned to offline admin), show 0
+                const displayPosition = position > 0 ? position : '-';
+                
+                if (queueNumberEl) queueNumberEl.textContent = displayPosition;
+                if (totalPendingEl) totalPendingEl.textContent = activePendingRequests.length;
             } else if (myRequest && myRequest.status !== 'pending') {
                 // Request was processed - update entire display
                 stopQueueUpdates();

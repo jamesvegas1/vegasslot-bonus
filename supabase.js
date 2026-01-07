@@ -374,6 +374,30 @@ async function cleanupOfflineAdminRequests() {
     }
 }
 
+// Get active pending requests (unassigned OR assigned to online admins)
+async function getActivePendingRequests() {
+    // First cleanup offline admin requests
+    await cleanupOfflineAdminRequests();
+    
+    // Get all pending requests
+    const { data: allPending, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+    
+    if (error || !allPending) return [];
+    
+    // Get online admin IDs
+    const onlineAdmins = await getOnlineAdmins();
+    const onlineAdminIds = onlineAdmins.map(a => a.id);
+    
+    // Filter: unassigned OR assigned to online admin
+    return allPending.filter(r => 
+        r.assigned_to === null || onlineAdminIds.includes(r.assigned_to)
+    );
+}
+
 // ============================================
 // SECURE LOGIN - supports both hash and legacy plain-text
 // ============================================
