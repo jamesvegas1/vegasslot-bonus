@@ -106,6 +106,7 @@ function playNotificationSound() {
     } catch (e) { console.log('Audio error:', e); }
 }
 
+// Auto-refresh every 30 seconds
 setInterval(async () => {
     const previousCount = lastPendingCount;
     await loadRequests();
@@ -117,7 +118,26 @@ setInterval(async () => {
         showToast('Yeni Talep!', 'Yeni bir bonus talebi geldi.', 'info');
     }
     lastPendingCount = currentPending;
-}, 5000);
+}, 30000);
+
+// Manual refresh function
+async function manualRefresh() {
+    const refreshBtn = document.getElementById('manualRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Yenileniyor...';
+    }
+    
+    await loadRequests();
+    renderTable();
+    
+    if (refreshBtn) {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/><path d="M21 3v9h-9"/></svg> Yenile';
+    }
+    
+    showToast('Yenilendi', 'Talepler güncellendi.', 'success');
+}
 
 // --- Logout Modal ---
 const logoutModal = document.getElementById('logoutModal');

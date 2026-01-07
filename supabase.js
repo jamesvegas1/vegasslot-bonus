@@ -106,6 +106,12 @@ async function addBonusRequest(request) {
         return null;
     }
     console.log('Insert successful:', data);
+    
+    // Auto-assign to an online admin
+    if (data && data.id) {
+        await autoAssignRequest(data.id);
+    }
+    
     return data;
 }
 
