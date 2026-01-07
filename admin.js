@@ -67,6 +67,14 @@ let peakHoursChart = null;
 
 // --- Start Up ---
 (async () => {
+    // Ensure admin is online in database on page load
+    const adminId = localStorage.getItem('vegas_admin_id');
+    const storedStatus = localStorage.getItem('vegas_admin_status');
+    if (adminId && storedStatus === 'online') {
+        await updateAdminStatus(adminId, 'online');
+        console.log('Admin status synced to online in DB');
+    }
+    
     await loadRequests();
     // Restore last active tab or default to dashboard
     const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
@@ -163,13 +171,13 @@ function performLogout() {
         updateAdminStatus(adminId, 'offline');
     }
     
-    localStorage.removeItem('vegas_auth_token');
+            localStorage.removeItem('vegas_auth_token');
     localStorage.removeItem('vegas_admin_user');
     localStorage.removeItem('vegas_admin_role');
     localStorage.removeItem('vegas_admin_id');
     localStorage.removeItem('vegas_admin_status');
-    window.location.href = 'login.html';
-}
+            window.location.href = 'login.html';
+        }
 
 if (logoutBtn) {
     logoutBtn.addEventListener('click', showLogoutModal);
@@ -230,9 +238,9 @@ async function loadRequests() {
             assignedTo: r.assigned_to,
             assignedAt: r.assigned_at
         }));
-        renderTable();
-        updateStats();
-        return requests;
+    renderTable();
+    updateStats();
+    return requests;
     } catch (error) {
         console.error('Error loading requests:', error);
         requests = [];

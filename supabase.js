@@ -297,8 +297,13 @@ async function getUnassignedRequests() {
 
 // Auto-assign request to next online admin (round-robin)
 async function autoAssignRequest(requestId) {
+    console.log('autoAssignRequest called for:', requestId);
     const onlineAdmins = await getOnlineAdmins();
-    if (onlineAdmins.length === 0) return null;
+    console.log('Online admins:', onlineAdmins);
+    if (onlineAdmins.length === 0) {
+        console.log('No online admins found, request will remain unassigned');
+        return null;
+    }
     
     // Get request counts for each online admin
     const { data: counts } = await supabaseClient
@@ -331,6 +336,7 @@ async function autoAssignRequest(requestId) {
     });
     
     // Assign to this admin
+    console.log('Assigning request', requestId, 'to admin', minAdmin.id, minAdmin.username);
     await assignRequestToAdmin(requestId, minAdmin.id);
     return minAdmin;
 }
