@@ -255,12 +255,17 @@ async function getOnlineAdmins() {
         .from('admins')
         .select('*')
         .eq('status', 'online');
-    if (error) return [];
-    return data;
+    if (error) {
+        console.error('getOnlineAdmins error:', error);
+        return [];
+    }
+    console.log('getOnlineAdmins result:', data?.length || 0, 'admins online');
+    return data || [];
 }
 
 // Assign request to admin
 async function assignRequestToAdmin(requestId, adminId) {
+    console.log('assignRequestToAdmin:', requestId, '→', adminId);
     const { error } = await supabaseClient
         .from('bonus_requests')
         .update({ 
@@ -268,6 +273,11 @@ async function assignRequestToAdmin(requestId, adminId) {
             assigned_at: new Date().toISOString()
         })
         .eq('id', requestId);
+    if (error) {
+        console.error('assignRequestToAdmin failed:', error);
+    } else {
+        console.log('assignRequestToAdmin success');
+    }
     return !error;
 }
 

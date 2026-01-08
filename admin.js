@@ -65,20 +65,114 @@ let volumeChart = null;
 let statusChart = null;
 let peakHoursChart = null;
 
+// --- DEBUG SYSTEM ---
+window.debugBonusSystem = async function() {
+    console.log('=== BONUS SYSTEM DEBUG ===');
+    console.log('');
+    
+    // 1. Current Admin Info
+    const adminId = localStorage.getItem('vegas_admin_id');
+    const adminUser = localStorage.getItem('vegas_admin_user');
+    const adminStatus = localStorage.getItem('vegas_admin_status');
+    console.log('📌 CURRENT ADMIN:');
+    console.log('   ID:', adminId);
+    console.log('   Username:', adminUser);
+    console.log('   LocalStorage Status:', adminStatus);
+    console.log('');
+    
+    // 2. Database Admin Statuses
+    console.log('📋 ALL ADMINS IN DATABASE:');
+    const admins = await getAdmins();
+    admins.forEach(a => {
+        console.log(`   ${a.username}: ${a.status || 'NO STATUS'} (ID: ${a.id})`);
+    });
+    console.log('');
+    
+    // 3. Online Admins
+    console.log('✅ ONLINE ADMINS:');
+    const onlineAdmins = await getOnlineAdmins();
+    if (onlineAdmins.length === 0) {
+        console.log('   ⚠️ NO ONLINE ADMINS!');
+    } else {
+        onlineAdmins.forEach(a => console.log(`   ${a.username} (ID: ${a.id})`));
+    }
+    console.log('');
+    
+    // 4. Pending Requests
+    console.log('📝 PENDING REQUESTS:');
+    const allRequests = await getBonusRequests();
+    const pending = allRequests.filter(r => r.status === 'pending');
+    if (pending.length === 0) {
+        console.log('   No pending requests');
+    } else {
+        pending.forEach(r => {
+            const assignedAdmin = admins.find(a => a.id === r.assigned_to);
+            console.log(`   ${r.request_id}: ${r.username} → Assigned to: ${assignedAdmin ? assignedAdmin.username : 'UNASSIGNED'}`);
+        });
+    }
+    console.log('');
+    
+    // 5. Unassigned Requests
+    const unassigned = pending.filter(r => !r.assigned_to);
+    if (unassigned.length > 0) {
+        console.log('⚠️ UNASSIGNED REQUESTS:', unassigned.length);
+        unassigned.forEach(r => console.log(`   ${r.request_id}: ${r.username}`));
+    }
+    console.log('');
+    
+    // 6. Requests visible to current admin
+    const visiblePending = pending.filter(r => !r.assigned_to || r.assigned_to === adminId);
+    console.log('👁️ VISIBLE TO YOU:', visiblePending.length, 'pending requests');
+    
+    console.log('');
+    console.log('=== END DEBUG ===');
+    console.log('');
+    console.log('💡 Quick fixes:');
+    console.log('   - Force online: await updateAdminStatus("YOUR_ID", "online")');
+    console.log('   - Reassign all: await window.forceReassignAll()');
+    
+    return { admins, onlineAdmins, pending, unassigned, visiblePending };
+};
+
+// Force reassign all unassigned requests
+window.forceReassignAll = async function() {
+    const allRequests = await getBonusRequests();
+    const unassigned = allRequests.filter(r => r.status === 'pending' && !r.assigned_to);
+    
+    console.log('Reassigning', unassigned.length, 'requests...');
+    for (const req of unassigned) {
+        await autoAssignRequest(req.id);
+    }
+    console.log('Done! Refreshing...');
+    await loadRequests();
+};
+
 // --- Start Up ---
 (async () => {
     // Ensure admin is online in database on page load
     const adminId = localStorage.getItem('vegas_admin_id');
     const storedStatus = localStorage.getItem('vegas_admin_status');
-    if (adminId && storedStatus === 'online') {
-        await updateAdminStatus(adminId, 'online');
-        console.log('Admin status synced to online in DB');
+    
+    console.log('🚀 Admin Panel Starting...');
+    console.log('   Admin ID:', adminId);
+    console.log('   Stored Status:', storedStatus);
+    
+    if (adminId) {
+        // Always sync to online when panel opens (if user hasn't explicitly set offline)
+        if (storedStatus === 'online' || !storedStatus) {
+            const success = await updateAdminStatus(adminId, 'online');
+            console.log('   DB Status Update:', success ? '✅ Success' : '❌ Failed');
+            localStorage.setItem('vegas_admin_status', 'online');
+        }
     }
     
     await loadRequests();
     // Restore last active tab or default to dashboard
     const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
     handleNavigation(lastTab);
+    
+    console.log('✅ Admin Panel Ready');
+    console.log('💡 Run debugBonusSystem() in console for full debug info');
 })();
 // Auto-refresh every 30 seconds to catch new requests
 let lastPendingCount = 0;
@@ -208,20 +302,26 @@ document.addEventListener('keydown', (e) => {
 
 async function loadRequests() {
     try {
+        console.log('📥 loadRequests() starting...');
+        
         // First, cleanup requests assigned to offline admins
         await cleanupOfflineAdminRequests();
         
         let data = await getBonusRequests();
+        console.log('   Total requests from DB:', data.length);
         
         // Auto-assign unassigned pending requests to online admins
         const currentAdminId = localStorage.getItem('vegas_admin_id');
         const unassignedPending = data.filter(r => r.status === 'pending' && !r.assigned_to);
+        
         if (unassignedPending.length > 0) {
+            console.log('   ⚠️ Found', unassignedPending.length, 'unassigned pending requests, auto-assigning...');
             for (const req of unassignedPending) {
                 await autoAssignRequest(req.id);
             }
             // Reload to get updated assignments
             data = await getBonusRequests();
+            console.log('   ✅ Reloaded after assignment');
         }
         
         requests = data.map(r => ({
@@ -848,6 +948,9 @@ function renderTable() {
     const currentAdminId = localStorage.getItem('vegas_admin_id');
     const currentAdminStatus = localStorage.getItem('vegas_admin_status') || 'online';
 
+    console.log('🔄 renderTable() - Admin:', currentAdminId, 'Status:', currentAdminStatus);
+    console.log('   Total requests:', requests.length);
+
     // Filter Logic based on admin status
     let filtered = requests.filter(req => {
         // Show all non-pending (approved/rejected) for history
@@ -859,6 +962,9 @@ function renderTable() {
         // Online: Show pending if assigned to me or unassigned
         return !req.assignedTo || req.assignedTo === currentAdminId;
     });
+    
+    const pendingVisible = filtered.filter(r => r.status === 'pending').length;
+    console.log('   Pending visible to this admin:', pendingVisible);
 
     // Search
     if (searchInput && searchInput.value) {
