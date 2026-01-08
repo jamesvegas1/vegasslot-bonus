@@ -107,10 +107,8 @@ async function addBonusRequest(request) {
     }
     console.log('Insert successful:', data);
     
-    // Auto-assign to an online admin
-    if (data && data.id) {
-        await autoAssignRequest(data.id);
-    }
+    // No auto-assign - all online admins will see this request
+    // First admin to view it will claim it
     
     return data;
 }

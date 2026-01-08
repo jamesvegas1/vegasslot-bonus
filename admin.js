@@ -304,25 +304,14 @@ async function loadRequests() {
     try {
         console.log('📥 loadRequests() starting...');
         
-        // First, cleanup requests assigned to offline admins
+        // Cleanup requests assigned to offline admins (release them back to pool)
         await cleanupOfflineAdminRequests();
         
         let data = await getBonusRequests();
         console.log('   Total requests from DB:', data.length);
         
-        // Auto-assign unassigned pending requests to online admins
-        const currentAdminId = localStorage.getItem('vegas_admin_id');
-        const unassignedPending = data.filter(r => r.status === 'pending' && !r.assigned_to);
-        
-        if (unassignedPending.length > 0) {
-            console.log('   ⚠️ Found', unassignedPending.length, 'unassigned pending requests, auto-assigning...');
-            for (const req of unassignedPending) {
-                await autoAssignRequest(req.id);
-            }
-            // Reload to get updated assignments
-            data = await getBonusRequests();
-            console.log('   ✅ Reloaded after assignment');
-        }
+        // No auto-assign - all pending requests visible to all online admins
+        // First admin to click "view" will claim it
         
         requests = data.map(r => ({
             id: r.request_id,
@@ -959,12 +948,14 @@ function renderTable() {
         // If admin is offline or on break, don't show pending requests
         if (currentAdminStatus === 'offline' || currentAdminStatus === 'break') return false;
         
-        // Online: Show pending if assigned to me or unassigned
+        // NEW: Online admins see ALL pending requests (unclaimed + their own claimed)
+        // Requests claimed by OTHER admins are hidden
         return !req.assignedTo || req.assignedTo === currentAdminId;
     });
     
     const pendingVisible = filtered.filter(r => r.status === 'pending').length;
-    console.log('   Pending visible to this admin:', pendingVisible);
+    const unclaimedCount = filtered.filter(r => r.status === 'pending' && !r.assignedTo).length;
+    console.log('   Pending visible:', pendingVisible, '(Unclaimed:', unclaimedCount + ')');
 
     // Search
     if (searchInput && searchInput.value) {
@@ -1027,6 +1018,12 @@ function renderTable() {
         } else if (req.status === 'rejected') {
             statusClass = 'status-rejected';
             statusText = 'Reddedildi';
+        } else if (req.status === 'pending' && !req.assignedTo) {
+            statusClass = 'status-new';
+            statusText = '🆕 Yeni';
+        } else if (req.status === 'pending' && req.assignedTo === localStorage.getItem('vegas_admin_id')) {
+            statusClass = 'status-pending';
+            statusText = '📋 Sizde';
         }
 
         // Bonus Tag Class (Simplified)
@@ -1087,9 +1084,29 @@ function renderTable() {
     });
 }
 
-function viewRequest(id) {
+async function viewRequest(id) {
     const req = requests.find(r => r.id === id);
     if (!req) return;
+
+    const currentAdminId = localStorage.getItem('vegas_admin_id');
+    
+    // Check if request is claimed by another admin
+    if (req.assignedTo && req.assignedTo !== currentAdminId) {
+        showToast('Talep Alınmış', 'Bu talep başka bir admin tarafından işleniyor.', 'warning');
+        await loadRequests(); // Refresh to update list
+        return;
+    }
+    
+    // If unclaimed and pending, claim it for this admin
+    if (!req.assignedTo && req.status === 'pending') {
+        console.log('Claiming request', req.dbId, 'for admin', currentAdminId);
+        const success = await assignRequestToAdmin(req.dbId, currentAdminId);
+        if (success) {
+            req.assignedTo = currentAdminId;
+            showToast('Talep Alındı', 'Bu talep size atandı.', 'success');
+            await loadRequests(); // Refresh to update counts
+        }
+    }
 
     currentRequestId = id;
 
