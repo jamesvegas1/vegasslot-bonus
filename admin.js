@@ -1,3 +1,7 @@
+// --- Production Mode (disable debug logs) ---
+const IS_PRODUCTION = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+const debugLog = IS_PRODUCTION ? () => {} : console.log.bind(console);
+
 // --- Auth Check ---
 if (!localStorage.getItem('vegas_auth_token')) {
     window.location.href = 'login.html';
@@ -67,69 +71,69 @@ let peakHoursChart = null;
 
 // --- DEBUG SYSTEM ---
 window.debugBonusSystem = async function() {
-    console.log('=== BONUS SYSTEM DEBUG ===');
+    debugLog('=== BONUS SYSTEM DEBUG ===');
     console.log('');
     
     // 1. Current Admin Info
     const adminId = localStorage.getItem('vegas_admin_id');
     const adminUser = localStorage.getItem('vegas_admin_user');
     const adminStatus = localStorage.getItem('vegas_admin_status');
-    console.log('📌 CURRENT ADMIN:');
-    console.log('   ID:', adminId);
-    console.log('   Username:', adminUser);
-    console.log('   LocalStorage Status:', adminStatus);
-    console.log('');
+    debugLog('📌 CURRENT ADMIN:');
+    debugLog('   ID:', adminId);
+    debugLog('   Username:', adminUser);
+    debugLog('   LocalStorage Status:', adminStatus);
+    debugLog('');
     
     // 2. Database Admin Statuses
-    console.log('📋 ALL ADMINS IN DATABASE:');
+    debugLog('📋 ALL ADMINS IN DATABASE:');
     const admins = await getAdmins();
     admins.forEach(a => {
-        console.log(`   ${a.username}: ${a.status || 'NO STATUS'} (ID: ${a.id})`);
+        debugLog(`   ${a.username}: ${a.status || 'NO STATUS'} (ID: ${a.id})`);
     });
-    console.log('');
+    debugLog('');
     
     // 3. Online Admins
-    console.log('✅ ONLINE ADMINS:');
+    debugLog('✅ ONLINE ADMINS:');
     const onlineAdmins = await getOnlineAdmins();
     if (onlineAdmins.length === 0) {
-        console.log('   ⚠️ NO ONLINE ADMINS!');
+        debugLog('   ⚠️ NO ONLINE ADMINS!');
     } else {
-        onlineAdmins.forEach(a => console.log(`   ${a.username} (ID: ${a.id})`));
+        onlineAdmins.forEach(a => debugLog(`   ${a.username} (ID: ${a.id})`));
     }
-    console.log('');
+    debugLog('');
     
     // 4. Pending Requests
-    console.log('📝 PENDING REQUESTS:');
+    debugLog('📝 PENDING REQUESTS:');
     const allRequests = await getBonusRequests();
     const pending = allRequests.filter(r => r.status === 'pending');
     if (pending.length === 0) {
-        console.log('   No pending requests');
+        debugLog('   No pending requests');
     } else {
         pending.forEach(r => {
             const assignedAdmin = admins.find(a => a.id === r.assigned_to);
-            console.log(`   ${r.request_id}: ${r.username} → Assigned to: ${assignedAdmin ? assignedAdmin.username : 'UNASSIGNED'}`);
+            debugLog(`   ${r.request_id}: ${r.username} → Assigned to: ${assignedAdmin ? assignedAdmin.username : 'UNASSIGNED'}`);
         });
     }
-    console.log('');
+    debugLog('');
     
     // 5. Unassigned Requests
     const unassigned = pending.filter(r => !r.assigned_to);
     if (unassigned.length > 0) {
-        console.log('⚠️ UNASSIGNED REQUESTS:', unassigned.length);
-        unassigned.forEach(r => console.log(`   ${r.request_id}: ${r.username}`));
+        debugLog('⚠️ UNASSIGNED REQUESTS:', unassigned.length);
+        unassigned.forEach(r => debugLog(`   ${r.request_id}: ${r.username}`));
     }
-    console.log('');
+    debugLog('');
     
     // 6. Requests visible to current admin
     const visiblePending = pending.filter(r => !r.assigned_to || r.assigned_to === adminId);
-    console.log('👁️ VISIBLE TO YOU:', visiblePending.length, 'pending requests');
+    debugLog('👁️ VISIBLE TO YOU:', visiblePending.length, 'pending requests');
     
-    console.log('');
-    console.log('=== END DEBUG ===');
-    console.log('');
-    console.log('💡 Quick fixes:');
-    console.log('   - Force online: await updateAdminStatus("YOUR_ID", "online")');
-    console.log('   - Reassign all: await window.forceReassignAll()');
+    debugLog('');
+    debugLog('=== END DEBUG ===');
+    debugLog('');
+    debugLog('💡 Quick fixes:');
+    debugLog('   - Force online: await updateAdminStatus("YOUR_ID", "online")');
+    debugLog('   - Reassign all: await window.forceReassignAll()');
     
     return { admins, onlineAdmins, pending, unassigned, visiblePending };
 };
@@ -139,11 +143,11 @@ window.forceReassignAll = async function() {
     const allRequests = await getBonusRequests();
     const unassigned = allRequests.filter(r => r.status === 'pending' && !r.assigned_to);
     
-    console.log('Reassigning', unassigned.length, 'requests...');
+    debugLog('Reassigning', unassigned.length, 'requests...');
     for (const req of unassigned) {
         await autoAssignRequest(req.id);
     }
-    console.log('Done! Refreshing...');
+    debugLog('Done! Refreshing...');
     await loadRequests();
 };
 
@@ -153,15 +157,15 @@ window.forceReassignAll = async function() {
     const adminId = localStorage.getItem('vegas_admin_id');
     const storedStatus = localStorage.getItem('vegas_admin_status');
     
-    console.log('🚀 Admin Panel Starting...');
-    console.log('   Admin ID:', adminId);
-    console.log('   Stored Status:', storedStatus);
+    debugLog('🚀 Admin Panel Starting...');
+    debugLog('   Admin ID:', adminId);
+    debugLog('   Stored Status:', storedStatus);
     
     if (adminId) {
         // Always sync to online when panel opens (if user hasn't explicitly set offline)
         if (storedStatus === 'online' || !storedStatus) {
             const success = await updateAdminStatus(adminId, 'online');
-            console.log('   DB Status Update:', success ? '✅ Success' : '❌ Failed');
+            debugLog('   DB Status Update:', success ? '✅ Success' : '❌ Failed');
             localStorage.setItem('vegas_admin_status', 'online');
         }
     }
@@ -171,8 +175,8 @@ window.forceReassignAll = async function() {
     const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
     handleNavigation(lastTab);
     
-    console.log('✅ Admin Panel Ready');
-    console.log('💡 Run debugBonusSystem() in console for full debug info');
+    debugLog('✅ Admin Panel Ready');
+    debugLog('💡 Run debugBonusSystem() in console for full debug info');
 })();
 // Auto-refresh every 30 seconds to catch new requests
 let lastPendingCount = 0;
@@ -302,13 +306,13 @@ document.addEventListener('keydown', (e) => {
 
 async function loadRequests() {
     try {
-        console.log('📥 loadRequests() starting...');
+        debugLog('📥 loadRequests() starting...');
         
         // Cleanup requests assigned to offline admins (release them back to pool)
         await cleanupOfflineAdminRequests();
         
         let data = await getBonusRequests();
-        console.log('   Total requests from DB:', data.length);
+        debugLog('   Total requests from DB:', data.length);
         
         // No auto-assign - all pending requests visible to all online admins
         // First admin to click "view" will claim it
@@ -426,7 +430,7 @@ function updateRecentActivity() {
             <div class="activity-item">
                 <div class="activity-icon ${statusClass}">${icon}</div>
                 <div class="activity-content">
-                    <div class="activity-title">${escapeHtml(req.username)} - ${req.bonusTypeLabel || req.bonusType}</div>
+                    <div class="activity-title">${escapeHtml(req.username)} - ${escapeHtml(req.bonusTypeLabel || req.bonusType)}</div>
                     <div class="activity-meta">${statusText}</div>
                 </div>
                 <div class="activity-time">${dateStr} ${timeStr}</div>
@@ -835,7 +839,7 @@ function updateTopBonuses(data) {
             <div class="top-bonus-item enhanced">
                 <div class="tb-header">
                     <div class="tb-rank ${rankClass}">${rank}</div>
-                    <div class="tb-name">${name}</div>
+                            <div class="tb-name">${escapeHtml(name)}</div>
                     <div class="tb-trend ${trendClass}">${trendIcon}</div>
                 </div>
                 <div class="tb-progress-container">
@@ -937,8 +941,8 @@ function renderTable() {
     const currentAdminId = localStorage.getItem('vegas_admin_id');
     const currentAdminStatus = localStorage.getItem('vegas_admin_status') || 'online';
 
-    console.log('🔄 renderTable() - Admin:', currentAdminId, 'Status:', currentAdminStatus);
-    console.log('   Total requests:', requests.length);
+    debugLog('🔄 renderTable() - Admin:', currentAdminId, 'Status:', currentAdminStatus);
+    debugLog('   Total requests:', requests.length);
 
     // Filter Logic based on admin status
     let filtered = requests.filter(req => {
@@ -955,7 +959,7 @@ function renderTable() {
     
     const pendingVisible = filtered.filter(r => r.status === 'pending').length;
     const unclaimedCount = filtered.filter(r => r.status === 'pending' && !r.assignedTo).length;
-    console.log('   Pending visible:', pendingVisible, '(Unclaimed:', unclaimedCount + ')');
+    debugLog('   Pending visible:', pendingVisible, '(Unclaimed:', unclaimedCount + ')');
 
     // Search
     if (searchInput && searchInput.value) {
@@ -1046,7 +1050,7 @@ function renderTable() {
                         <span>${escapeHtml(req.username)}</span>
                     </div>
                 </td>
-                <td><span class="bonus-tag ${tagClass}">${req.bonusTypeLabel}</span></td>
+                <td><span class="bonus-tag ${tagClass}">${escapeHtml(req.bonusTypeLabel)}</span></td>
                 <td class="col-note">
                     <span class="note-truncate">${escapeHtml(noteDisplay)}</span>
                 </td>
@@ -1099,7 +1103,7 @@ async function viewRequest(id) {
     
     // If unclaimed and pending, claim it for this admin
     if (!req.assignedTo && req.status === 'pending') {
-        console.log('Claiming request', req.dbId, 'for admin', currentAdminId);
+        debugLog('Claiming request', req.dbId, 'for admin', currentAdminId);
         const success = await assignRequestToAdmin(req.dbId, currentAdminId);
         if (success) {
             req.assignedTo = currentAdminId;
@@ -1771,10 +1775,10 @@ async function loadBonusTypesList() {
         container.innerHTML = types.map(t => `
             <div class="bonus-type-item" data-id="${t.id}">
                 <div class="bonus-type-info">
-                    <span class="bonus-type-icon">${t.icon || '🎁'}</span>
+                    <span class="bonus-type-icon">${escapeHtml(t.icon) || '🎁'}</span>
                     <div>
-                        <div class="bonus-type-name">${t.label}</div>
-                        <div class="bonus-type-code">${t.name}</div>
+                        <div class="bonus-type-name">${escapeHtml(t.label)}</div>
+                        <div class="bonus-type-code">${escapeHtml(t.name)}</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -1918,7 +1922,7 @@ async function loadPersonnelList() {
             return `
                 <tr>
                     <td><strong>${escapeHtml(a.username)}</strong></td>
-                    <td>${a.fullname || '-'}</td>
+                    <td>${escapeHtml(a.fullname) || '-'}</td>
                     <td><span class="role-badge ${a.role}">${roleLabel}</span></td>
                     <td>
                         <div class="personnel-status">

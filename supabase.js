@@ -2,6 +2,10 @@
 const SUPABASE_URL = 'https://vbojfpkosxkwbofaghlg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZib2pmcGtvc3hrd2JvZmFnaGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NTgxNDIsImV4cCI6MjA4MzIzNDE0Mn0.-uUYM4OeA9VpJyJzrJ2f03KXfeF6E85G7zNFYJMk_5Q';
 
+// Production mode - disable debug logs
+const IS_PROD = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+const dbLog = IS_PROD ? () => {} : console.log.bind(console);
+
 // Initialize Supabase Client
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -83,7 +87,7 @@ async function getBonusRequestsByUsername(username) {
 }
 
 async function addBonusRequest(request) {
-    console.log('addBonusRequest called with:', request);
+    dbLog('addBonusRequest called with:', request);
     const insertData = {
         request_id: request.id,
         username: request.username,
@@ -93,7 +97,7 @@ async function addBonusRequest(request) {
         status: 'pending',
         notified: false
     };
-    console.log('Insert data:', insertData);
+    dbLog('Insert data:', insertData);
     
     const { data, error } = await supabaseClient
         .from('bonus_requests')
@@ -105,7 +109,7 @@ async function addBonusRequest(request) {
         console.error('Supabase error details:', error.message, error.details, error.hint, error.code);
         return null;
     }
-    console.log('Insert successful:', data);
+    dbLog('Insert successful:', data);
     
     // No auto-assign - all online admins will see this request
     // First admin to view it will claim it
@@ -257,13 +261,13 @@ async function getOnlineAdmins() {
         console.error('getOnlineAdmins error:', error);
         return [];
     }
-    console.log('getOnlineAdmins result:', data?.length || 0, 'admins online');
+    dbLog('getOnlineAdmins result:', data?.length || 0, 'admins online');
     return data || [];
 }
 
 // Assign request to admin
 async function assignRequestToAdmin(requestId, adminId) {
-    console.log('assignRequestToAdmin:', requestId, '→', adminId);
+    dbLog('assignRequestToAdmin:', requestId, '→', adminId);
     const { error } = await supabaseClient
         .from('bonus_requests')
         .update({ 
@@ -274,7 +278,7 @@ async function assignRequestToAdmin(requestId, adminId) {
     if (error) {
         console.error('assignRequestToAdmin failed:', error);
     } else {
-        console.log('assignRequestToAdmin success');
+        dbLog('assignRequestToAdmin success');
     }
     return !error;
 }
@@ -305,11 +309,11 @@ async function getUnassignedRequests() {
 
 // Auto-assign request to next online admin (round-robin)
 async function autoAssignRequest(requestId) {
-    console.log('autoAssignRequest called for:', requestId);
+    dbLog('autoAssignRequest called for:', requestId);
     const onlineAdmins = await getOnlineAdmins();
-    console.log('Online admins:', onlineAdmins);
+    dbLog('Online admins:', onlineAdmins);
     if (onlineAdmins.length === 0) {
-        console.log('No online admins found, request will remain unassigned');
+        dbLog('No online admins found, request will remain unassigned');
         return null;
     }
     
@@ -344,7 +348,7 @@ async function autoAssignRequest(requestId) {
     });
     
     // Assign to this admin
-    console.log('Assigning request', requestId, 'to admin', minAdmin.id, minAdmin.username);
+    dbLog('Assigning request', requestId, 'to admin', minAdmin.id, minAdmin.username);
     await assignRequestToAdmin(requestId, minAdmin.id);
     return minAdmin;
 }
@@ -435,7 +439,7 @@ async function validateLoginSecure(username, passwordHash, plainPassword) {
                 .from('admins')
                 .update({ password: passwordHash })
                 .eq('id', admin.id);
-            console.log('Password migrated to hash for user:', username);
+            dbLog('Password migrated to hash for user:', username);
             return admin;
         }
     }
