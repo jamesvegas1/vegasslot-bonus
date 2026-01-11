@@ -56,10 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function checkRateLimit(username) {
         try {
-            const hasPending = await checkUserHasPendingRequest(username);
-            if (hasPending) {
+            const result = await checkUserHasPendingRequest(username);
+            if (result.limited) {
                 rateLimitWarning.classList.remove('hidden');
                 submitBtn.disabled = true;
+                
+                // Update warning message based on reason
+                if (result.reason === 'pending') {
+                    rateLimitWarning.innerHTML = '⚠️ Bekleyen bir talebiniz var. Yeni talep veremezsiniz.';
+                } else if (result.reason === 'cooldown') {
+                    rateLimitWarning.innerHTML = `⏳ Son talebiniz işlendi. Yeni talep için <strong>${result.waitMinutes} dakika</strong> beklemeniz gerekiyor.`;
+                }
             } else {
                 rateLimitWarning.classList.add('hidden');
                 submitBtn.disabled = false;

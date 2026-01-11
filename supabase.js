@@ -218,16 +218,41 @@ async function deleteBonusType(id) {
     return !error;
 }
 
-// Check if user has pending request (rate limit)
+// Check if user has pending request OR recently completed request (rate limit)
+// Returns: { limited: boolean, reason: string, waitMinutes: number }
 async function checkUserHasPendingRequest(username) {
-    const { data, error } = await supabaseClient
+    // 1. Check for pending requests
+    const { data: pending, error: pendingError } = await supabaseClient
         .from('bonus_requests')
         .select('id')
         .ilike('username', username)
         .eq('status', 'pending')
         .limit(1);
-    if (error) return false;
-    return data && data.length > 0;
+    
+    if (!pendingError && pending && pending.length > 0) {
+        return { limited: true, reason: 'pending', waitMinutes: 0 };
+    }
+    
+    // 2. Check for recently completed requests (5 minute cooldown)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recent, error: recentError } = await supabaseClient
+        .from('bonus_requests')
+        .select('updated_at, status')
+        .ilike('username', username)
+        .in('status', ['approved', 'rejected'])
+        .gte('updated_at', fiveMinutesAgo)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+    
+    if (!recentError && recent && recent.length > 0) {
+        const completedAt = new Date(recent[0].updated_at);
+        const cooldownEnd = new Date(completedAt.getTime() + 5 * 60 * 1000);
+        const waitMs = cooldownEnd - Date.now();
+        const waitMinutes = Math.ceil(waitMs / 60000);
+        return { limited: true, reason: 'cooldown', waitMinutes: Math.max(1, waitMinutes) };
+    }
+    
+    return { limited: false, reason: null, waitMinutes: 0 };
 }
 
 // Update admin details
