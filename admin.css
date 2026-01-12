@@ -859,6 +859,12 @@ body {
     color: #60a5fa;
 }
 
+.processed-by-label {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
 .modal-footer {
     padding: 24px;
     border-top: 1px solid var(--border-color);

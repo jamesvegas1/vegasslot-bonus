@@ -1025,12 +1025,16 @@ function renderTable() {
         // Status Class
         let statusClass = 'status-pending';
         let statusText = 'Beklemede';
+        let processedByText = '';
+        
         if (req.status === 'approved') {
             statusClass = 'status-approved';
             statusText = 'Onaylandı';
+            if (req.processedByName) processedByText = req.processedByName;
         } else if (req.status === 'rejected') {
             statusClass = 'status-rejected';
             statusText = 'Reddedildi';
+            if (req.processedByName) processedByText = req.processedByName;
         } else if (req.status === 'pending' && !req.assignedTo) {
             statusClass = 'status-new';
             statusText = '🆕 Yeni';
@@ -1069,7 +1073,10 @@ function renderTable() {
                     <span class="note-truncate">${escapeHtml(noteDisplay)}</span>
                 </td>
                 <td class="col-date">${dateStr}</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    ${processedByText ? `<div class="processed-by-label">👤 ${escapeHtml(processedByText)}</div>` : ''}
+                </td>
                 <td class="col-actions">
                     <button class="action-btn btn-view" data-id="${req.id}" title="Detaylar">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
