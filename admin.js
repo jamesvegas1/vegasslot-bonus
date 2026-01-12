@@ -1035,9 +1035,14 @@ function renderTable() {
         if (req.bonusType === 'loss') tagClass = 'tag-loss';
         if (req.bonusType === 'freespins') tagClass = 'tag-spins';
 
-        // Truncate Note
-        let noteDisplay = req.note ? req.note : '-';
-        if (noteDisplay.length > 25) noteDisplay = noteDisplay.substring(0, 25) + '...';
+        // Truncate Note - Show admin note for processed requests, user note for pending
+        let noteDisplay = '-';
+        if (req.status === 'approved' || req.status === 'rejected') {
+            noteDisplay = req.adminNote ? req.adminNote : '-';
+        } else {
+            noteDisplay = req.note ? req.note : '-';
+        }
+        if (noteDisplay.length > 30) noteDisplay = noteDisplay.substring(0, 30) + '...';
 
         row.innerHTML = `
                 <td class="col-check">
