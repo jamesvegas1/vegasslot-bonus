@@ -850,6 +850,15 @@ body {
     color: #fbbf24;
 }
 
+.processed-by-box {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #60a5fa;
+}
+
 .modal-footer {
     padding: 24px;
     border-top: 1px solid var(--border-color);

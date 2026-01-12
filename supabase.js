@@ -117,13 +117,20 @@ async function addBonusRequest(request) {
     return data;
 }
 
-async function updateBonusRequestStatus(id, status, adminNote = '') {
+async function updateBonusRequestStatus(id, status, adminNote = '', processedBy = null) {
     const updateData = { 
         status, 
         admin_note: adminNote || '',
         updated_at: new Date().toISOString()
     };
-    dbLog('updateBonusRequestStatus:', { id, status, adminNote: adminNote || '(empty)' });
+    
+    // Add processed_by info if provided
+    if (processedBy) {
+        updateData.processed_by = processedBy;
+        updateData.processed_at = new Date().toISOString();
+    }
+    
+    dbLog('updateBonusRequestStatus:', { id, status, adminNote: adminNote || '(empty)', processedBy });
     
     const { error } = await supabaseClient
         .from('bonus_requests')

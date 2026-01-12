@@ -1,17 +1,20 @@
 -- ============================================
--- ADMIN_NOTE SÜTUNUNU EKLE
+-- BONUS_REQUESTS EK SÜTUNLARI
 -- VegasSlot Bonus Request System
 -- ============================================
 -- Bu SQL'i Supabase Dashboard > SQL Editor'da çalıştır
 
--- admin_note sütununu bonus_requests tablosuna ekle
+-- 1. Admin note sütunu
 ALTER TABLE bonus_requests 
 ADD COLUMN IF NOT EXISTS admin_note TEXT DEFAULT '';
 
--- Opsiyonel: Mevcut kayıtları null yerine boş string yap
-UPDATE bonus_requests 
-SET admin_note = '' 
-WHERE admin_note IS NULL;
+-- 2. İşlemi yapan admin (kim onayladı/reddetti)
+ALTER TABLE bonus_requests 
+ADD COLUMN IF NOT EXISTS processed_by UUID REFERENCES admins(id);
+
+-- 3. İşlem zamanı
+ALTER TABLE bonus_requests 
+ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ;
 
 -- Kontrol et
 SELECT column_name, data_type, is_nullable

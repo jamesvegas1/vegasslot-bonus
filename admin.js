@@ -317,6 +317,11 @@ async function loadRequests() {
         // No auto-assign - all pending requests visible to all online admins
         // First admin to click "view" will claim it
         
+        // Get admin list to resolve processed_by names
+        const adminList = await getAdmins();
+        const adminMap = {};
+        adminList.forEach(a => { adminMap[a.id] = a.username; });
+        
         requests = data.map(r => ({
             id: r.request_id,
             dbId: r.id,
@@ -329,7 +334,10 @@ async function loadRequests() {
             status: r.status,
             notified: r.notified,
             assignedTo: r.assigned_to,
-            assignedAt: r.assigned_at
+            assignedAt: r.assigned_at,
+            processedBy: r.processed_by,
+            processedByName: adminMap[r.processed_by] || null,
+            processedAt: r.processed_at
         }));
     renderTable();
     updateStats();
@@ -343,7 +351,8 @@ async function loadRequests() {
 
 async function saveRequestStatus(dbId, status, adminNote = '') {
     try {
-        await updateBonusRequestStatus(dbId, status, adminNote);
+        const currentAdminId = localStorage.getItem('vegas_admin_id');
+        await updateBonusRequestStatus(dbId, status, adminNote, currentAdminId);
         await loadRequests();
     } catch (error) {
         console.error('Error saving request:', error);
@@ -1139,6 +1148,19 @@ async function viewRequest(id) {
             modalAdminNoteSection.style.display = 'block';
         } else {
             modalAdminNoteSection.style.display = 'none';
+        }
+    }
+    
+    // Show who processed the request
+    const modalProcessedBy = document.getElementById('modalProcessedBy');
+    const modalProcessedBySection = document.getElementById('modalProcessedBySection');
+    if (modalProcessedBySection && modalProcessedBy) {
+        if (req.processedByName && req.status !== 'pending') {
+            const processedDate = req.processedAt ? new Date(req.processedAt).toLocaleString('tr-TR') : '';
+            modalProcessedBy.innerHTML = `<strong>${escapeHtml(req.processedByName)}</strong>${processedDate ? ' - ' + processedDate : ''}`;
+            modalProcessedBySection.style.display = 'block';
+        } else {
+            modalProcessedBySection.style.display = 'none';
         }
     }
 
