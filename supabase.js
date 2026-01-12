@@ -120,15 +120,19 @@ async function addBonusRequest(request) {
 async function updateBonusRequestStatus(id, status, adminNote = '') {
     const updateData = { 
         status, 
+        admin_note: adminNote || '',
         updated_at: new Date().toISOString()
     };
-    if (adminNote) {
-        updateData.admin_note = adminNote;
-    }
+    dbLog('updateBonusRequestStatus:', { id, status, adminNote: adminNote || '(empty)' });
+    
     const { error } = await supabaseClient
         .from('bonus_requests')
         .update(updateData)
         .eq('id', id);
+    
+    if (error) {
+        console.error('updateBonusRequestStatus error:', error.message, error.details);
+    }
     return !error;
 }
 

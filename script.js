@@ -332,6 +332,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Debug: Log the requests to see admin_note values
+            console.log('User requests:', userRequests);
+            userRequests.forEach(r => console.log('Request:', r.request_id, 'admin_note:', r.admin_note));
+
             const resultsHtml = userRequests.map(req => {
                 let queuePosition = null;
                 if (req.status === 'pending') {
@@ -351,6 +355,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusClass = 'rejected';
                 }
 
+                // Build admin note HTML - check for any truthy value
+                const adminNoteValue = req.admin_note && req.admin_note.trim() ? req.admin_note.trim() : null;
+                const adminNoteHtml = adminNoteValue ? `
+                    <div class="admin-note-display">
+                        <span class="admin-note-label">Yönetici Notu:</span>
+                        <p>${escapeHtml(adminNoteValue)}</p>
+                    </div>
+                ` : '';
+
                 return `
                     <div class="status-card">
                         <div class="status-card-header">
@@ -369,12 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             ` : ''}
                         </div>
-                        ${req.admin_note ? `
-                            <div class="admin-note-display">
-                                <span class="admin-note-label">Yönetici Notu:</span>
-                                <p>${escapeHtml(req.admin_note)}</p>
-                            </div>
-                        ` : ''}
+                        ${adminNoteHtml}
                     </div>
                 `;
             }).join('');
