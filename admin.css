@@ -844,6 +844,12 @@ body {
     line-height: 1.6;
 }
 
+.note-box.admin-note-highlight {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
 .modal-footer {
     padding: 24px;
     border-top: 1px solid var(--border-color);

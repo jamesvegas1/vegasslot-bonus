@@ -1042,7 +1042,7 @@ function renderTable() {
         } else {
             noteDisplay = req.note ? req.note : '-';
         }
-        if (noteDisplay.length > 30) noteDisplay = noteDisplay.substring(0, 30) + '...';
+        if (noteDisplay.length > 50) noteDisplay = noteDisplay.substring(0, 50) + '...';
 
         row.innerHTML = `
                 <td class="col-check">
@@ -1129,6 +1129,18 @@ async function viewRequest(id) {
         modalTime.textContent = d.toLocaleString('tr-TR');
     }
     if (modalNote) modalNote.textContent = req.note || 'Not yok.';
+    
+    // Show Admin Note if exists (for processed requests)
+    const modalAdminNote = document.getElementById('modalAdminNote');
+    const modalAdminNoteSection = document.getElementById('modalAdminNoteSection');
+    if (modalAdminNoteSection && modalAdminNote) {
+        if (req.adminNote && req.adminNote.trim()) {
+            modalAdminNote.textContent = req.adminNote;
+            modalAdminNoteSection.style.display = 'block';
+        } else {
+            modalAdminNoteSection.style.display = 'none';
+        }
+    }
 
     // Populate History
     const modalHistory = document.getElementById('modalHistory');
