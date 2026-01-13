@@ -82,16 +82,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const depositNoBtn = document.getElementById('depositNoBtn');
     let userConfirmedDeposit = false;
     
-    // Bonus types that require deposit confirmation
-    const depositRequiredBonuses = ['freespin', 'chance_jest', 'jest'];
+    // Bonus types that require deposit confirmation (check both value and label)
+    const depositRequiredKeywords = ['freespin', 'free_spin', 'chance', 'jest', 'şans', 'sans'];
     
     bonusSelect.addEventListener('change', () => {
         if (bonusSelect.value) {
             bonusHelper.classList.remove('hidden');
             
-            // Check if this bonus requires deposit confirmation
+            // Check if this bonus requires deposit confirmation (check both value and display text)
             const selectedValue = bonusSelect.value.toLowerCase();
-            const needsConfirmation = depositRequiredBonuses.some(b => selectedValue.includes(b));
+            const selectedText = bonusSelect.options[bonusSelect.selectedIndex].text.toLowerCase();
+            const needsConfirmation = depositRequiredKeywords.some(keyword => 
+                selectedValue.includes(keyword) || selectedText.includes(keyword)
+            );
             
             if (needsConfirmation && !userConfirmedDeposit) {
                 // Show deposit confirmation modal
