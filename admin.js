@@ -151,15 +151,20 @@ window.forceReassignAll = async function() {
     await loadRequests();
 };
 
+// --- Hashtag/Note Templates State ---
+let noteTemplates = [];
+
 // --- Start Up ---
 (async () => {
     // Ensure admin is online in database on page load
     const adminId = localStorage.getItem('vegas_admin_id');
     const storedStatus = localStorage.getItem('vegas_admin_status');
+    const adminRole = localStorage.getItem('vegas_admin_role');
     
     debugLog('🚀 Admin Panel Starting...');
     debugLog('   Admin ID:', adminId);
     debugLog('   Stored Status:', storedStatus);
+    debugLog('   Role:', adminRole);
     
     if (adminId) {
         // Always sync to online when panel opens (if user hasn't explicitly set offline)
@@ -169,6 +174,14 @@ window.forceReassignAll = async function() {
             localStorage.setItem('vegas_admin_status', 'online');
         }
     }
+    
+    // Show admin-only navigation if user is admin
+    if (adminRole === 'admin') {
+        document.querySelectorAll('.admin-only-nav').forEach(el => el.classList.add('visible'));
+    }
+    
+    // Load note templates for hashtag buttons
+    await loadNoteTemplates();
     
     await loadRequests();
     // Restore last active tab or default to dashboard
@@ -1244,6 +1257,9 @@ function openConfirm(id, actionType) {
         }
     }
 
+    // Render hashtag buttons based on action type
+    renderHashtagButtons(actionType);
+
     confirmModal.classList.remove('hidden');
     // Clear admin note input
     const noteInput = document.getElementById('adminNoteInput');
@@ -1459,6 +1475,7 @@ function handleNavigation(view) {
     const settingsSection = document.getElementById('settingsSection');
     const bonusManagementSection = document.getElementById('bonusManagementSection');
     const personnelManagementSection = document.getElementById('personnelManagementSection');
+    const hashtagManagementSection = document.getElementById('hashtagManagementSection');
 
     // Reset All Views First
     if (statsGrid) statsGrid.style.display = 'none';
@@ -1466,6 +1483,7 @@ function handleNavigation(view) {
     if (settingsSection) settingsSection.style.display = 'none';
     if (bonusManagementSection) bonusManagementSection.style.display = 'none';
     if (personnelManagementSection) personnelManagementSection.style.display = 'none';
+    if (hashtagManagementSection) hashtagManagementSection.style.display = 'none';
     if (analyticsSection) {
         analyticsSection.classList.add('hidden');
         analyticsSection.style.display = 'none';
@@ -1529,6 +1547,13 @@ function handleNavigation(view) {
         if (personnelManagementSection) {
             personnelManagementSection.style.display = 'block';
             loadPersonnelList();
+        }
+    } else if (view === 'hashtagManagement') {
+        if (pageTitle) pageTitle.textContent = 'Not Şablonları';
+        const hashtagManagementSection = document.getElementById('hashtagManagementSection');
+        if (hashtagManagementSection) {
+            hashtagManagementSection.style.display = 'block';
+            loadHashtagManagement();
         }
     }
 }
@@ -2221,3 +2246,187 @@ async function takeRequest(requestDbId) {
         showToast('Hata', 'Talep atanamadı.', 'error');
     }
 }
+
+// ============================================
+// HASHTAG / NOTE TEMPLATE SYSTEM
+// ============================================
+
+async function loadNoteTemplates() {
+    try {
+        noteTemplates = await getNoteTemplates();
+        debugLog('📝 Loaded', noteTemplates.length, 'note templates');
+    } catch (e) {
+        console.error('Error loading note templates:', e);
+        noteTemplates = [];
+    }
+}
+
+// Render hashtag buttons in confirm modal based on action type
+function renderHashtagButtons(actionType) {
+    const container = document.getElementById('hashtagButtons');
+    if (!container) return;
+    
+    // Filter templates by action type
+    const relevantCategories = actionType === 'reject' 
+        ? ['rejected', 'general'] 
+        : ['approved', 'general'];
+    
+    const filtered = noteTemplates.filter(t => relevantCategories.includes(t.category));
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<span style="color: #64748b; font-size: 11px;">Şablon yok</span>';
+        return;
+    }
+    
+    container.innerHTML = filtered.map(t => `
+        <button type="button" class="hashtag-btn category-${t.category}" 
+                data-text="${escapeHtml(t.text)}" 
+                title="${escapeHtml(t.text)}">
+            <span class="hashtag-icon">${t.icon}</span>
+            <span>${escapeHtml(t.tag)}</span>
+        </button>
+    `).join('');
+    
+    // Add click handlers
+    container.querySelectorAll('.hashtag-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const noteInput = document.getElementById('adminNoteInput');
+            if (noteInput) {
+                noteInput.value = btn.dataset.text;
+                noteInput.focus();
+            }
+        });
+    });
+}
+
+// ============================================
+// HASHTAG MANAGEMENT (Admin Only)
+// ============================================
+
+async function loadHashtagManagement() {
+    const rejectedList = document.getElementById('rejectedHashtags');
+    const approvedList = document.getElementById('approvedHashtags');
+    const generalList = document.getElementById('generalHashtags');
+    
+    if (!rejectedList) return;
+    
+    try {
+        const allTemplates = await getAllNoteTemplates();
+        
+        const renderCategory = (container, templates) => {
+            if (templates.length === 0) {
+                container.innerHTML = '<div class="empty-state">Bu kategoride şablon yok</div>';
+                return;
+            }
+            
+            container.innerHTML = templates.map(t => `
+                <div class="hashtag-item ${!t.is_active ? 'inactive' : ''}">
+                    <div class="hashtag-item-icon">${t.icon}</div>
+                    <div class="hashtag-item-content">
+                        <div class="hashtag-item-tag">${escapeHtml(t.tag)}</div>
+                        <div class="hashtag-item-text">${escapeHtml(t.text)}</div>
+                    </div>
+                    <div class="hashtag-item-actions">
+                        <button class="btn-icon edit" onclick="editHashtag('${t.id}')" title="Düzenle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon delete" onclick="deleteHashtagItem('${t.id}')" title="Sil">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        };
+        
+        renderCategory(rejectedList, allTemplates.filter(t => t.category === 'rejected'));
+        renderCategory(approvedList, allTemplates.filter(t => t.category === 'approved'));
+        renderCategory(generalList, allTemplates.filter(t => t.category === 'general'));
+        
+    } catch (e) {
+        console.error('Error loading hashtag management:', e);
+    }
+}
+
+async function editHashtag(id) {
+    const allTemplates = await getAllNoteTemplates();
+    const template = allTemplates.find(t => t.id === id);
+    if (!template) return;
+    
+    document.getElementById('hashtagModalTitle').textContent = 'Şablonu Düzenle';
+    document.getElementById('hashtagId').value = id;
+    document.getElementById('hashtagTag').value = template.tag;
+    document.getElementById('hashtagText').value = template.text;
+    document.getElementById('hashtagCategory').value = template.category;
+    document.getElementById('hashtagIcon').value = template.icon || '';
+    document.getElementById('hashtagActive').checked = template.is_active;
+    
+    document.getElementById('hashtagModal').classList.remove('hidden');
+}
+
+async function deleteHashtagItem(id) {
+    if (!confirm('Bu şablonu silmek istediğinize emin misiniz?')) return;
+    
+    const success = await deleteNoteTemplate(id);
+    if (success) {
+        showToast('Başarılı', 'Şablon silindi.', 'success');
+        await loadHashtagManagement();
+        await loadNoteTemplates(); // Refresh for confirm modal
+    } else {
+        showToast('Hata', 'Silinemedi.', 'error');
+    }
+}
+
+// Hashtag Modal Events
+document.getElementById('addHashtagBtn')?.addEventListener('click', () => {
+    document.getElementById('hashtagModalTitle').textContent = 'Yeni Şablon Ekle';
+    document.getElementById('hashtagForm').reset();
+    document.getElementById('hashtagId').value = '';
+    document.getElementById('hashtagActive').checked = true;
+    document.getElementById('hashtagModal').classList.remove('hidden');
+});
+
+document.getElementById('closeHashtagModal')?.addEventListener('click', () => {
+    document.getElementById('hashtagModal').classList.add('hidden');
+});
+
+document.getElementById('hashtagForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('hashtagId').value;
+    let tag = document.getElementById('hashtagTag').value.trim();
+    const text = document.getElementById('hashtagText').value.trim();
+    const category = document.getElementById('hashtagCategory').value;
+    const icon = document.getElementById('hashtagIcon').value.trim() || '📝';
+    const isActive = document.getElementById('hashtagActive').checked;
+    
+    // Ensure tag starts with #
+    if (!tag.startsWith('#')) tag = '#' + tag;
+    
+    if (!tag || !text) {
+        showToast('Hata', 'Hashtag ve metin zorunludur.', 'error');
+        return;
+    }
+    
+    let success;
+    if (id) {
+        success = await updateNoteTemplate(id, { tag, text, category, icon, is_active: isActive });
+    } else {
+        success = await addNoteTemplate(tag, text, category, icon);
+    }
+    
+    if (success) {
+        showToast('Başarılı', id ? 'Şablon güncellendi.' : 'Şablon eklendi.', 'success');
+        document.getElementById('hashtagModal').classList.add('hidden');
+        await loadHashtagManagement();
+        await loadNoteTemplates(); // Refresh for confirm modal
+    } else {
+        showToast('Hata', 'İşlem başarısız.', 'error');
+    }
+});

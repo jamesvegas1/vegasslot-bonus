@@ -507,3 +507,80 @@ async function updateAdminPasswordSecure(id, newPassword) {
         .eq('id', id);
     return !error;
 }
+
+// ============================================
+// NOTE TEMPLATES (HASHTAGS)
+// ============================================
+
+// Get all active note templates
+async function getNoteTemplates() {
+    const { data, error } = await supabaseClient
+        .from('note_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+    if (error) {
+        console.error('Error fetching note templates:', error);
+        return [];
+    }
+    return data;
+}
+
+// Get all note templates (including inactive) for admin management
+async function getAllNoteTemplates() {
+    const { data, error } = await supabaseClient
+        .from('note_templates')
+        .select('*')
+        .order('sort_order', { ascending: true });
+    if (error) return [];
+    return data;
+}
+
+// Add new note template
+async function addNoteTemplate(tag, text, category = 'general', icon = '📝') {
+    // Get max sort_order
+    const { data: existing } = await supabaseClient
+        .from('note_templates')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1);
+    
+    const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 1;
+    
+    const { data, error } = await supabaseClient
+        .from('note_templates')
+        .insert([{ 
+            tag: tag.startsWith('#') ? tag : '#' + tag,
+            text, 
+            category, 
+            icon, 
+            sort_order: nextOrder 
+        }])
+        .select()
+        .single();
+    
+    if (error) {
+        console.error('Error adding note template:', error);
+        return null;
+    }
+    return data;
+}
+
+// Update note template
+async function updateNoteTemplate(id, updates) {
+    updates.updated_at = new Date().toISOString();
+    const { error } = await supabaseClient
+        .from('note_templates')
+        .update(updates)
+        .eq('id', id);
+    return !error;
+}
+
+// Delete note template
+async function deleteNoteTemplate(id) {
+    const { error } = await supabaseClient
+        .from('note_templates')
+        .delete()
+        .eq('id', id);
+    return !error;
+}

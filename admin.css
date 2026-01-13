@@ -2838,3 +2838,191 @@ body {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+/* ============================================
+   HASHTAG / NOTE TEMPLATE SYSTEM
+   ============================================ */
+
+/* Hashtag buttons in confirm modal */
+.hashtag-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.hashtag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.hashtag-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.hashtag-btn.category-rejected {
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.hashtag-btn.category-rejected:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fecaca;
+}
+
+.hashtag-btn.category-approved {
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+}
+
+.hashtag-btn.category-approved:hover {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #a7f3d0;
+}
+
+.hashtag-btn .hashtag-icon {
+    font-size: 12px;
+}
+
+/* Hashtag Management Section */
+.section-desc {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.hashtag-categories {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.category-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.category-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.category-title.rejected {
+    color: #f87171;
+}
+
+.category-title.approved {
+    color: #34d399;
+}
+
+.category-title.general {
+    color: #60a5fa;
+}
+
+.hashtag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hashtag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.hashtag-item:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.hashtag-item-icon {
+    font-size: 1.2rem;
+    width: 32px;
+    text-align: center;
+}
+
+.hashtag-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.hashtag-item-tag {
+    font-weight: 600;
+    color: #f59e0b;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.hashtag-item-text {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.hashtag-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.hashtag-item-actions .btn-icon {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.hashtag-item-actions .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.hashtag-item-actions .btn-icon.delete:hover {
+    color: #ef4444;
+}
+
+/* Empty state for hashtag lists */
+.hashtag-list .empty-state {
+    padding: 1rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+/* Admin-only nav visibility */
+.admin-only-nav {
+    display: none;
+}
+
+.admin-only-nav.visible {
+    display: flex;
+}

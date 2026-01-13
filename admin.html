@@ -92,6 +92,18 @@
                     </span>
                     Bonus Yönetimi
                 </a>
+                <a href="#" class="nav-item admin-only-nav" data-view="hashtagManagement">
+                    <span class="nav-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="4" y1="9" x2="20" y2="9"></line>
+                            <line x1="4" y1="15" x2="20" y2="15"></line>
+                            <line x1="10" y1="3" x2="8" y2="21"></line>
+                            <line x1="16" y1="3" x2="14" y2="21"></line>
+                        </svg>
+                    </span>
+                    Not Şablonları
+                </a>
                 <a href="#" class="nav-item" data-view="personnelManagement">
                     <span class="nav-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -521,6 +533,79 @@
                     </div>
                 </div>
 
+                <!-- Hashtag/Template Management Section -->
+                <div id="hashtagManagementSection" class="management-section" style="display: none;">
+                    <div class="section-header">
+                        <h2>Not Şablonları (Hashtag)</h2>
+                        <button class="btn-primary" id="addHashtagBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Yeni Şablon Ekle
+                        </button>
+                    </div>
+                    <p class="section-desc">Talep onay/red işlemlerinde hızlı not eklemek için şablonlar oluşturun.</p>
+                    
+                    <div class="hashtag-categories">
+                        <div class="category-section">
+                            <h3 class="category-title rejected">🚫 Red Notları</h3>
+                            <div class="hashtag-list" id="rejectedHashtags"></div>
+                        </div>
+                        <div class="category-section">
+                            <h3 class="category-title approved">✅ Onay Notları</h3>
+                            <div class="hashtag-list" id="approvedHashtags"></div>
+                        </div>
+                        <div class="category-section">
+                            <h3 class="category-title general">📝 Genel Notlar</h3>
+                            <div class="hashtag-list" id="generalHashtags"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Hashtag Modal -->
+                <div id="hashtagModal" class="modal-overlay hidden">
+                    <div class="modal-box">
+                        <h3 id="hashtagModalTitle">Yeni Şablon Ekle</h3>
+                        <form id="hashtagForm">
+                            <input type="hidden" id="hashtagId">
+                            <div class="form-group">
+                                <label>Hashtag</label>
+                                <input type="text" id="hashtagTag" placeholder="#eksik-belge" required>
+                                <small>Kısa, tire ile ayrılmış etiket</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Not Metni</label>
+                                <textarea id="hashtagText" rows="3" placeholder="Üyeye gösterilecek mesaj..." required></textarea>
+                            </div>
+                            <div class="form-row-inline">
+                                <div class="form-group">
+                                    <label>Kategori</label>
+                                    <select id="hashtagCategory">
+                                        <option value="rejected">🚫 Red</option>
+                                        <option value="approved">✅ Onay</option>
+                                        <option value="general">📝 Genel</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>İkon</label>
+                                    <input type="text" id="hashtagIcon" placeholder="📄" maxlength="4" style="width: 60px; text-align: center;">
+                                </div>
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="hashtagActive" checked>
+                                    Aktif
+                                </label>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="button" class="btn-cancel" id="closeHashtagModal">İptal</button>
+                                <button type="submit" class="btn-primary">Kaydet</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- Add/Edit Personnel Modal -->
                 <div id="personnelModal" class="modal-overlay hidden">
                     <div class="modal-box">
@@ -848,7 +933,10 @@
                         id="confirmUsername"></span></strong> adlı kullanıcıya tanımlanacaktır.</p>
             <div class="admin-note-section">
                 <label for="adminNoteInput">Üyeye Not (İsteğe bağlı)</label>
-                <textarea id="adminNoteInput" placeholder="Üyeye gösterilecek not yazın..." maxlength="200"></textarea>
+                <div class="hashtag-buttons" id="hashtagButtons">
+                    <!-- Populated by JS -->
+                </div>
+                <textarea id="adminNoteInput" placeholder="Üyeye gösterilecek not yazın veya yukarıdan hazır şablon seçin..." maxlength="200"></textarea>
             </div>
             <div class="confirm-actions">
                 <button class="btn-cancel">İptal</button>
