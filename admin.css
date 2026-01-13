@@ -3385,16 +3385,3 @@ body {
     }
 }
 
-/* --- Footer --- */
-.admin-footer {
-    text-align: center;
-    padding: 30px 20px;
-    margin-top: 60px;
-}
-
-.admin-footer p {
-    color: var(--text-tertiary);
-    font-size: 11px;
-    margin: 0;
-    opacity: 0.4;
-}
