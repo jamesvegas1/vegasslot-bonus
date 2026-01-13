@@ -3386,14 +3386,15 @@ body {
 }
 
 /* --- Footer --- */
-.site-footer {
+.admin-footer {
     text-align: center;
     padding: 20px;
-    margin-top: 40px;
+    margin-top: auto;
     border-top: 1px solid var(--border-color);
+    background: var(--bg-primary);
 }
 
-.site-footer p {
+.admin-footer p {
     color: var(--text-tertiary);
     font-size: 12px;
     margin: 0;
