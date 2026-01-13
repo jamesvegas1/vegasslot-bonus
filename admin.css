@@ -3388,14 +3388,13 @@ body {
 /* --- Footer --- */
 .admin-footer {
     text-align: center;
-    padding: 20px;
-    margin-top: auto;
-    border-top: 1px solid var(--border-color);
-    background: var(--bg-primary);
+    padding: 30px 20px;
+    margin-top: 60px;
 }
 
 .admin-footer p {
     color: var(--text-tertiary);
-    font-size: 12px;
+    font-size: 11px;
     margin: 0;
+    opacity: 0.4;
 }
