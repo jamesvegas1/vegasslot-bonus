@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetim Paneli | VegasSlot</title>
-    <link rel="stylesheet" href="admin.css?v=9">
+    <link rel="stylesheet" href="admin.css?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -115,6 +115,17 @@
                         </svg>
                     </span>
                     Personel Yönetimi
+                </a>
+                <a href="#" class="nav-item" data-view="performance">
+                    <span class="nav-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20V10"></path>
+                            <path d="M18 20V4"></path>
+                            <path d="M6 20v-4"></path>
+                        </svg>
+                    </span>
+                    Performans
                 </a>
                 <div class="nav-divider"></div>
                 <a href="#" class="nav-item" data-view="settings">
@@ -530,6 +541,61 @@
                                 <button type="submit" class="btn-primary">Kaydet</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Performance Statistics Section -->
+                <div id="performanceSection" class="management-section" style="display: none;">
+                    <div class="section-header">
+                        <h2>Performans İstatistikleri</h2>
+                        <div class="period-filter">
+                            <button class="period-btn active" data-period="today">Bugün</button>
+                            <button class="period-btn" data-period="week">Bu Hafta</button>
+                            <button class="period-btn" data-period="month">Bu Ay</button>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="performance-card leaderboard-card">
+                        <div class="card-header">
+                            <h3>🏆 Liderlik Tablosu</h3>
+                            <span class="update-time" id="leaderboardUpdateTime">--</span>
+                        </div>
+                        <div class="leaderboard-table-wrapper">
+                            <table class="leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th class="rank-col">#</th>
+                                        <th>Personel</th>
+                                        <th class="num-col">İşlem</th>
+                                        <th class="num-col">Onay</th>
+                                        <th class="num-col">Red</th>
+                                        <th class="num-col">Ort. Süre</th>
+                                        <th class="num-col">Başarı</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboardBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Individual Stats Cards -->
+                    <div class="performance-grid" id="performanceGrid">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Performance Charts -->
+                    <div class="performance-charts">
+                        <div class="performance-card">
+                            <h3>📈 Günlük İşlem Trendi (Son 7 Gün)</h3>
+                            <canvas id="performanceTrendChart"></canvas>
+                        </div>
+                        <div class="performance-card">
+                            <h3>⏱️ Ortalama İşlem Süreleri</h3>
+                            <canvas id="avgTimeChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -971,7 +1037,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="security.js"></script>
     <script src="supabase.js?v=9"></script>
-    <script src="admin.js?v=18"></script>
+    <script src="admin.js?v=19"></script>
 </body>
 
 </html>

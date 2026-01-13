@@ -1476,6 +1476,7 @@ function handleNavigation(view) {
     const bonusManagementSection = document.getElementById('bonusManagementSection');
     const personnelManagementSection = document.getElementById('personnelManagementSection');
     const hashtagManagementSection = document.getElementById('hashtagManagementSection');
+    const performanceSection = document.getElementById('performanceSection');
 
     // Reset All Views First
     if (statsGrid) statsGrid.style.display = 'none';
@@ -1484,6 +1485,7 @@ function handleNavigation(view) {
     if (bonusManagementSection) bonusManagementSection.style.display = 'none';
     if (personnelManagementSection) personnelManagementSection.style.display = 'none';
     if (hashtagManagementSection) hashtagManagementSection.style.display = 'none';
+    if (performanceSection) performanceSection.style.display = 'none';
     if (analyticsSection) {
         analyticsSection.classList.add('hidden');
         analyticsSection.style.display = 'none';
@@ -1554,6 +1556,13 @@ function handleNavigation(view) {
         if (hashtagManagementSection) {
             hashtagManagementSection.style.display = 'block';
             loadHashtagManagement();
+        }
+    } else if (view === 'performance') {
+        if (pageTitle) pageTitle.textContent = 'Performans İstatistikleri';
+        const performanceSection = document.getElementById('performanceSection');
+        if (performanceSection) {
+            performanceSection.style.display = 'block';
+            loadPerformanceStats();
         }
     }
 }
@@ -2429,4 +2438,357 @@ document.getElementById('hashtagForm')?.addEventListener('submit', async (e) => 
     } else {
         showToast('Hata', 'İşlem başarısız.', 'error');
     }
+});
+
+// ============================================
+// PERFORMANCE STATISTICS
+// ============================================
+
+let currentPerformancePeriod = 'today';
+let performanceTrendChart = null;
+let avgTimeChart = null;
+let adminsCache = [];
+
+async function loadPerformanceStats() {
+    const leaderboardBody = document.getElementById('leaderboardBody');
+    const performanceGrid = document.getElementById('performanceGrid');
+    const updateTime = document.getElementById('leaderboardUpdateTime');
+    
+    if (!leaderboardBody) return;
+    
+    try {
+        // Get all admins
+        adminsCache = await getAdmins();
+        
+        // Get time boundaries based on period
+        const now = new Date();
+        let startTime;
+        
+        if (currentPerformancePeriod === 'today') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        } else if (currentPerformancePeriod === 'week') {
+            startTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+        } else {
+            startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+        }
+        
+        // Filter processed requests in period
+        const processedRequests = requests.filter(r => {
+            if (!r.processedAt || !r.processedBy) return false;
+            return new Date(r.processedAt).getTime() >= startTime;
+        });
+        
+        // Calculate stats per admin
+        const adminStats = {};
+        
+        adminsCache.forEach(admin => {
+            adminStats[admin.id] = {
+                id: admin.id,
+                username: admin.username,
+                role: admin.role,
+                status: admin.status || 'offline',
+                total: 0,
+                approved: 0,
+                rejected: 0,
+                totalTime: 0,
+                avgTime: 0
+            };
+        });
+        
+        processedRequests.forEach(req => {
+            if (!adminStats[req.processedBy]) return;
+            
+            const stats = adminStats[req.processedBy];
+            stats.total++;
+            
+            if (req.status === 'approved') stats.approved++;
+            if (req.status === 'rejected') stats.rejected++;
+            
+            // Calculate processing time (from created to processed)
+            if (req.timestamp && req.processedAt) {
+                const created = new Date(req.timestamp).getTime();
+                const processed = new Date(req.processedAt).getTime();
+                const timeDiff = (processed - created) / 60000; // minutes
+                if (timeDiff > 0 && timeDiff < 1440) { // Max 24 hours
+                    stats.totalTime += timeDiff;
+                }
+            }
+        });
+        
+        // Calculate averages and sort by total
+        const sortedStats = Object.values(adminStats)
+            .map(s => {
+                s.avgTime = s.total > 0 ? s.totalTime / s.total : 0;
+                s.successRate = s.total > 0 ? (s.approved / s.total) * 100 : 0;
+                return s;
+            })
+            .sort((a, b) => b.total - a.total);
+        
+        // Render leaderboard
+        renderLeaderboard(sortedStats);
+        
+        // Render individual stat cards
+        renderPerformanceGrid(sortedStats);
+        
+        // Render charts
+        renderPerformanceCharts(sortedStats);
+        
+        // Update time
+        if (updateTime) {
+            updateTime.textContent = 'Güncellendi: ' + now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+    } catch (e) {
+        console.error('Error loading performance stats:', e);
+    }
+}
+
+function renderLeaderboard(stats) {
+    const tbody = document.getElementById('leaderboardBody');
+    if (!tbody) return;
+    
+    if (stats.length === 0 || stats.every(s => s.total === 0)) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="performance-empty">
+                    <div>Bu dönemde işlem yapılmamış</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = stats.map((s, idx) => {
+        const rank = idx + 1;
+        let rankClass = 'rank-other';
+        if (rank === 1) rankClass = 'rank-1';
+        else if (rank === 2) rankClass = 'rank-2';
+        else if (rank === 3) rankClass = 'rank-3';
+        
+        const avgTimeStr = s.avgTime > 0 ? s.avgTime.toFixed(1) + ' dk' : '-';
+        
+        let successClass = 'high';
+        if (s.successRate < 70) successClass = 'low';
+        else if (s.successRate < 85) successClass = 'medium';
+        
+        const roleLabel = s.role === 'admin' ? 'Admin' : 'Agent';
+        
+        return `
+            <tr>
+                <td class="rank-col">
+                    <span class="rank-badge ${rankClass}">${rank}</span>
+                </td>
+                <td>
+                    <div class="personnel-cell">
+                        <span class="status-dot-sm ${s.status}"></span>
+                        <div class="personnel-avatar">${s.username.substring(0, 2).toUpperCase()}</div>
+                        <div>
+                            <div class="personnel-name">${escapeHtml(s.username)}</div>
+                            <div class="personnel-role">${roleLabel}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="num-col"><strong>${s.total}</strong></td>
+                <td class="num-col stat-approved">${s.approved}</td>
+                <td class="num-col stat-rejected">${s.rejected}</td>
+                <td class="num-col stat-time">${avgTimeStr}</td>
+                <td class="num-col">
+                    <div class="success-rate">
+                        <div class="success-bar">
+                            <div class="success-bar-fill ${successClass}" style="width: ${s.successRate}%"></div>
+                        </div>
+                        <span class="success-percent">${s.successRate.toFixed(0)}%</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderPerformanceGrid(stats) {
+    const grid = document.getElementById('performanceGrid');
+    if (!grid) return;
+    
+    // Only show admins with activity
+    const activeStats = stats.filter(s => s.total > 0);
+    
+    if (activeStats.length === 0) {
+        grid.innerHTML = '';
+        return;
+    }
+    
+    grid.innerHTML = activeStats.slice(0, 6).map(s => {
+        const roleLabel = s.role === 'admin' ? 'Admin' : 'Senior Agent';
+        const avgTimeStr = s.avgTime > 0 ? s.avgTime.toFixed(1) : '0';
+        
+        return `
+            <div class="agent-stat-card">
+                <div class="agent-stat-header">
+                    <div class="agent-stat-avatar">${s.username.substring(0, 2).toUpperCase()}</div>
+                    <div class="agent-stat-info">
+                        <h4>${escapeHtml(s.username)}</h4>
+                        <span><span class="status-dot-sm ${s.status}"></span>${roleLabel}</span>
+                    </div>
+                </div>
+                <div class="agent-stat-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">${s.total}</div>
+                        <div class="metric-label">İşlem</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value approved">${s.approved}</div>
+                        <div class="metric-label">Onay</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value time">${avgTimeStr} dk</div>
+                        <div class="metric-label">Ort. Süre</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value rate">${s.successRate.toFixed(0)}%</div>
+                        <div class="metric-label">Başarı</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderPerformanceCharts(stats) {
+    // Trend Chart - Last 7 days by admin
+    const trendCtx = document.getElementById('performanceTrendChart');
+    const avgTimeCtx = document.getElementById('avgTimeChart');
+    
+    if (!trendCtx || !avgTimeCtx) return;
+    
+    // Get active admins (top 5 by total)
+    const topAdmins = stats.filter(s => s.total > 0).slice(0, 5);
+    
+    if (topAdmins.length === 0) {
+        // Clear charts if no data
+        if (performanceTrendChart) {
+            performanceTrendChart.destroy();
+            performanceTrendChart = null;
+        }
+        if (avgTimeChart) {
+            avgTimeChart.destroy();
+            avgTimeChart = null;
+        }
+        return;
+    }
+    
+    // Generate last 7 days labels
+    const days = [];
+    const dayLabels = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d);
+        dayLabels.push(d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }));
+    }
+    
+    // Calculate daily counts per admin
+    const datasets = topAdmins.map((admin, idx) => {
+        const colors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+        
+        const dailyCounts = days.map(day => {
+            const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+            const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+            
+            return requests.filter(r => {
+                if (!r.processedAt || r.processedBy !== admin.id) return false;
+                const t = new Date(r.processedAt).getTime();
+                return t >= dayStart && t < dayEnd;
+            }).length;
+        });
+        
+        return {
+            label: admin.username,
+            data: dailyCounts,
+            borderColor: colors[idx % colors.length],
+            backgroundColor: colors[idx % colors.length] + '20',
+            tension: 0.3,
+            fill: false
+        };
+    });
+    
+    // Destroy existing chart
+    if (performanceTrendChart) {
+        performanceTrendChart.destroy();
+    }
+    
+    performanceTrendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: dayLabels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#2a2f3a' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+    
+    // Avg Time Chart (Bar)
+    if (avgTimeChart) {
+        avgTimeChart.destroy();
+    }
+    
+    avgTimeChart = new Chart(avgTimeCtx, {
+        type: 'bar',
+        data: {
+            labels: topAdmins.map(a => a.username),
+            datasets: [{
+                label: 'Ort. Süre (dk)',
+                data: topAdmins.map(a => a.avgTime.toFixed(1)),
+                backgroundColor: topAdmins.map(a => {
+                    if (a.avgTime <= 3) return '#10b981';
+                    if (a.avgTime <= 5) return '#f59e0b';
+                    return '#ef4444';
+                }),
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#2a2f3a' },
+                    title: {
+                        display: true,
+                        text: 'Dakika'
+                    }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// Period filter handlers
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPerformancePeriod = btn.dataset.period;
+        loadPerformanceStats();
+    });
 });
