@@ -2519,7 +2519,21 @@ async function loadPerformanceStats() {
         const sortedStats = Object.values(adminStats)
             .map(s => {
                 s.avgTime = s.total > 0 ? s.totalTime / s.total : 0;
-                s.successRate = s.total > 0 ? (s.approved / s.total) * 100 : 0;
+                // Speed-based success rate: 
+                // ≤3 dk = 100%, 5 dk = 80%, 10 dk = 50%, 15+ dk = 20%
+                if (s.avgTime <= 0 || s.total === 0) {
+                    s.successRate = 0;
+                } else if (s.avgTime <= 3) {
+                    s.successRate = 100;
+                } else if (s.avgTime <= 5) {
+                    s.successRate = 100 - ((s.avgTime - 3) * 10); // 100→80
+                } else if (s.avgTime <= 10) {
+                    s.successRate = 80 - ((s.avgTime - 5) * 6); // 80→50
+                } else if (s.avgTime <= 15) {
+                    s.successRate = 50 - ((s.avgTime - 10) * 6); // 50→20
+                } else {
+                    s.successRate = Math.max(10, 20 - (s.avgTime - 15)); // min 10%
+                }
                 return s;
             })
             .sort((a, b) => b.total - a.total);
@@ -2645,7 +2659,7 @@ function renderPerformanceGrid(stats) {
                     </div>
                     <div class="metric-item">
                         <div class="metric-value rate">${s.successRate.toFixed(0)}%</div>
-                        <div class="metric-label">Başarı</div>
+                        <div class="metric-label">Hız</div>
                     </div>
                 </div>
             </div>
