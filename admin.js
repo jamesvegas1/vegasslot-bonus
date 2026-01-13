@@ -175,8 +175,8 @@ let noteTemplates = [];
         }
     }
     
-    // Show admin-only navigation if user is admin
-    if (adminRole === 'admin') {
+    // Show admin-only navigation if user is admin or senior_agent
+    if (adminRole === 'admin' || adminRole === 'senior_agent') {
         document.querySelectorAll('.admin-only-nav').forEach(el => el.classList.add('visible'));
     }
     
