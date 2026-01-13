@@ -3384,3 +3384,17 @@ body {
         display: table-cell;
     }
 }
+
+/* --- Footer --- */
+.site-footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    border-top: 1px solid var(--border-color);
+}
+
+.site-footer p {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 0;
+}

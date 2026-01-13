@@ -1387,3 +1387,17 @@ textarea::placeholder {
     color: #fff;
     transform: translateY(-2px);
 }
+
+/* --- Footer --- */
+.site-footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.site-footer p {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    margin: 0;
+}
