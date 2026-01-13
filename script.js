@@ -76,12 +76,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Dropdown Helper Logic
+    // Dropdown Helper Logic & Deposit Confirmation
+    const depositConfirmModal = document.getElementById('depositConfirmModal');
+    const depositYesBtn = document.getElementById('depositYesBtn');
+    const depositNoBtn = document.getElementById('depositNoBtn');
+    let userConfirmedDeposit = false;
+    
+    // Bonus types that require deposit confirmation
+    const depositRequiredBonuses = ['freespin', 'chance_jest', 'jest'];
+    
     bonusSelect.addEventListener('change', () => {
         if (bonusSelect.value) {
             bonusHelper.classList.remove('hidden');
+            
+            // Check if this bonus requires deposit confirmation
+            const selectedValue = bonusSelect.value.toLowerCase();
+            const needsConfirmation = depositRequiredBonuses.some(b => selectedValue.includes(b));
+            
+            if (needsConfirmation && !userConfirmedDeposit) {
+                // Show deposit confirmation modal
+                depositConfirmModal.classList.remove('hidden');
+            }
         }
     });
+    
+    // Deposit Yes button
+    if (depositYesBtn) {
+        depositYesBtn.addEventListener('click', () => {
+            userConfirmedDeposit = true;
+            depositConfirmModal.classList.add('hidden');
+        });
+    }
+    
+    // Deposit No button
+    if (depositNoBtn) {
+        depositNoBtn.addEventListener('click', () => {
+            userConfirmedDeposit = false;
+            depositConfirmModal.classList.add('hidden');
+            // Reset bonus selection
+            bonusSelect.value = '';
+            bonusHelper.classList.add('hidden');
+        });
+    }
+    
+    // Close on backdrop click
+    if (depositConfirmModal) {
+        depositConfirmModal.querySelector('.deposit-confirm-backdrop').addEventListener('click', () => {
+            // Treat as "No"
+            userConfirmedDeposit = false;
+            depositConfirmModal.classList.add('hidden');
+            bonusSelect.value = '';
+            bonusHelper.classList.add('hidden');
+        });
+    }
 
     // Submit Logic
     form.addEventListener('submit', async (e) => {
@@ -262,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset UI Elements
         bonusHelper.classList.add('hidden');
         rateLimitWarning.classList.add('hidden');
+        userConfirmedDeposit = false; // Reset deposit confirmation
 
         // Reset Button
         submitBtn.disabled = false;

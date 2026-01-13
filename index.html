@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bonus Talep | Casino</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -167,6 +167,21 @@
         </section>
     </main>
 
+    <!-- Deposit Confirmation Modal -->
+    <div id="depositConfirmModal" class="deposit-confirm-modal hidden">
+        <div class="deposit-confirm-backdrop"></div>
+        <div class="deposit-confirm-content">
+            <div class="deposit-confirm-icon">⚠️</div>
+            <h2>Önemli Uyarı</h2>
+            <p class="deposit-confirm-warning">Daha önce yatırımınız yoksa talebiniz reddedilecektir.</p>
+            <p class="deposit-confirm-question">Sitemize hiç yatırım yaptınız mı?</p>
+            <div class="deposit-confirm-buttons">
+                <button id="depositYesBtn" class="deposit-btn deposit-btn-yes">✓ Evet, Yaptım</button>
+                <button id="depositNoBtn" class="deposit-btn deposit-btn-no">✗ Hayır</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Modal -->
     <div id="notificationModal" class="notification-modal hidden">
         <div class="notification-backdrop"></div>
@@ -184,7 +199,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="security.js"></script>
     <script src="supabase.js?v=6"></script>
-    <script src="script.js?v=11"></script>
+    <script src="script.js?v=12"></script>
 </body>
 
 </html>
