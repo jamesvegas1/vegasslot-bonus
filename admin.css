@@ -3681,3 +3681,36 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
 }
+
+/* Icon Picker */
+.icon-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.icon-option {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.icon-option:hover {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--accent-emerald);
+    transform: scale(1.1);
+}
+
+.icon-option.selected {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--accent-emerald);
+}

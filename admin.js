@@ -2517,6 +2517,20 @@ document.getElementById('closeHashtagModal')?.addEventListener('click', () => {
     document.getElementById('hashtagModal').classList.add('hidden');
 });
 
+// Icon picker click handlers
+document.querySelectorAll('.icon-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const icon = btn.dataset.icon;
+        const iconInput = document.getElementById('hashtagIcon');
+        if (iconInput) {
+            iconInput.value = icon;
+        }
+        // Update selected state
+        document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    });
+});
+
 document.getElementById('hashtagForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
