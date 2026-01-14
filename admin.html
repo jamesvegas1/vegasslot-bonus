@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetim Paneli | VegasSlot</title>
-    <link rel="stylesheet" href="admin.css?v=11">
+    <link rel="stylesheet" href="admin.css?v=12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -613,29 +613,61 @@
                 <!-- Hashtag/Template Management Section -->
                 <div id="hashtagManagementSection" class="management-section" style="display: none;">
                     <div class="section-header">
-                        <h2>Not Şablonları (Hashtag)</h2>
+                        <h2>Not Şablonları</h2>
                         <button class="btn-primary" id="addHashtagBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            Yeni Şablon Ekle
+                            Yeni Genel Şablon
                         </button>
                     </div>
-                    <p class="section-desc">Talep onay/red işlemlerinde hızlı not eklemek için şablonlar oluşturun.</p>
                     
-                    <div class="hashtag-categories">
-                        <div class="category-section">
-                            <h3 class="category-title rejected">🚫 Red Notları</h3>
-                            <div class="hashtag-list" id="rejectedHashtags"></div>
+                    <!-- Preference Selector -->
+                    <div class="preference-section">
+                        <label class="preference-label">⚙️ Tercihim (Onay/Red ekranında hangi şablonlar gösterilsin):</label>
+                        <select id="templatePreferenceSelect" class="preference-select" onchange="updatePreference(this.value)">
+                            <option value="global">🌐 Genel şablonları kullan</option>
+                            <option value="personal">👤 Kişisel şablonlarımı kullan</option>
+                            <option value="both">📋 Her ikisini göster</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Personal Templates Section -->
+                    <div class="personal-templates-section">
+                        <div class="section-subheader">
+                            <h3>👤 Kişisel Şablonlarım</h3>
+                            <button class="btn-secondary" id="addPersonalHashtagBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Kişisel Ekle
+                            </button>
                         </div>
-                        <div class="category-section">
-                            <h3 class="category-title approved">✅ Onay Notları</h3>
-                            <div class="hashtag-list" id="approvedHashtags"></div>
+                        <p class="section-desc-small">Sadece sizin göreceğiniz özel şablonlar</p>
+                        <div class="hashtag-list personal-list" id="personalHashtags"></div>
+                    </div>
+                    
+                    <!-- Global Templates Section -->
+                    <div class="global-templates-section">
+                        <div class="section-subheader">
+                            <h3>🌐 Genel Şablonlar</h3>
+                            <span class="admin-only-label">Sadece adminler düzenleyebilir</span>
                         </div>
-                        <div class="category-section">
-                            <h3 class="category-title general">📝 Genel Notlar</h3>
-                            <div class="hashtag-list" id="generalHashtags"></div>
+                        <div class="hashtag-categories">
+                            <div class="category-section">
+                                <h3 class="category-title rejected">🚫 Red Notları</h3>
+                                <div class="hashtag-list" id="rejectedHashtags"></div>
+                            </div>
+                            <div class="category-section">
+                                <h3 class="category-title approved">✅ Onay Notları</h3>
+                                <div class="hashtag-list" id="approvedHashtags"></div>
+                            </div>
+                            <div class="category-section">
+                                <h3 class="category-title general">📝 Genel Notlar</h3>
+                                <div class="hashtag-list" id="generalHashtags"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -684,6 +716,7 @@
                         <h3 id="hashtagModalTitle">Yeni Şablon Ekle</h3>
                         <form id="hashtagForm">
                             <input type="hidden" id="hashtagId">
+                            <input type="hidden" id="hashtagIsPersonal" value="false">
                             <div class="form-group">
                                 <label>Hashtag</label>
                                 <input type="text" id="hashtagTag" placeholder="#eksik-belge" required>
@@ -1092,8 +1125,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="security.js"></script>
-    <script src="supabase.js?v=10"></script>
-    <script src="admin.js?v=21"></script>
+    <script src="supabase.js?v=11"></script>
+    <script src="admin.js?v=22"></script>
 </body>
 
 </html>

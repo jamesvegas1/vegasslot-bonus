@@ -2294,9 +2294,18 @@ async function takeRequest(requestDbId) {
 // HASHTAG / NOTE TEMPLATE SYSTEM
 // ============================================
 
+let currentTemplatePreference = 'global';
+
 async function loadNoteTemplates() {
     try {
-        noteTemplates = await getNoteTemplates();
+        const adminId = localStorage.getItem('vegas_admin_id');
+        
+        // Get user's preference
+        currentTemplatePreference = await getTemplatePreference(adminId);
+        debugLog('📝 Template preference:', currentTemplatePreference);
+        
+        // Load templates based on preference
+        noteTemplates = await getNoteTemplates(adminId, currentTemplatePreference);
         debugLog('📝 Loaded', noteTemplates.length, 'note templates');
     } catch (e) {
         console.error('Error loading note templates:', e);
@@ -2344,20 +2353,36 @@ function renderHashtagButtons(actionType) {
 }
 
 // ============================================
-// HASHTAG MANAGEMENT (Admin Only)
+// HASHTAG MANAGEMENT (Admin/Senior Agent)
 // ============================================
 
 async function loadHashtagManagement() {
     const rejectedList = document.getElementById('rejectedHashtags');
     const approvedList = document.getElementById('approvedHashtags');
     const generalList = document.getElementById('generalHashtags');
+    const personalList = document.getElementById('personalHashtags');
+    const preferenceSelect = document.getElementById('templatePreferenceSelect');
     
     if (!rejectedList) return;
     
+    const adminId = localStorage.getItem('vegas_admin_id');
+    const currentRole = localStorage.getItem('vegas_admin_role');
+    const isAdmin = currentRole === 'admin';
+    
     try {
-        const allTemplates = await getAllNoteTemplates();
+        // Load and set current preference
+        const preference = await getTemplatePreference(adminId);
+        if (preferenceSelect) {
+            preferenceSelect.value = preference;
+        }
         
-        const renderCategory = (container, templates) => {
+        // Load global templates (only admins can edit these)
+        const globalTemplates = await getGlobalNoteTemplates();
+        
+        // Load personal templates for this user
+        const personalTemplates = await getPersonalNoteTemplates(adminId);
+        
+        const renderCategory = (container, templates, isPersonal = false) => {
             if (templates.length === 0) {
                 container.innerHTML = '<div class="empty-state">Bu kategoride şablon yok</div>';
                 return;
@@ -2371,50 +2396,92 @@ async function loadHashtagManagement() {
                         <div class="hashtag-item-text">${escapeHtml(t.text)}</div>
                     </div>
                     <div class="hashtag-item-actions">
-                        <button class="btn-icon edit" onclick="editHashtag('${t.id}')" title="Düzenle">
+                        ${isPersonal || isAdmin ? `
+                        <button class="btn-icon edit" onclick="editHashtag('${t.id}', ${isPersonal})" title="Düzenle">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                         </button>
-                        <button class="btn-icon delete" onclick="deleteHashtagItem('${t.id}')" title="Sil">
+                        <button class="btn-icon delete" onclick="deleteHashtagItem('${t.id}', ${isPersonal})" title="Sil">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                             </svg>
                         </button>
+                        ` : '<span class="readonly-badge">Salt okunur</span>'}
                     </div>
                 </div>
             `).join('');
         };
         
-        renderCategory(rejectedList, allTemplates.filter(t => t.category === 'rejected'));
-        renderCategory(approvedList, allTemplates.filter(t => t.category === 'approved'));
-        renderCategory(generalList, allTemplates.filter(t => t.category === 'general'));
+        // Render global templates (by category)
+        renderCategory(rejectedList, globalTemplates.filter(t => t.category === 'rejected'), false);
+        renderCategory(approvedList, globalTemplates.filter(t => t.category === 'approved'), false);
+        renderCategory(generalList, globalTemplates.filter(t => t.category === 'general'), false);
+        
+        // Render personal templates
+        if (personalList) {
+            renderCategory(personalList, personalTemplates, true);
+        }
+        
+        // Show/hide global add button based on role
+        const addGlobalBtn = document.getElementById('addHashtagBtn');
+        if (addGlobalBtn) {
+            addGlobalBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
         
     } catch (e) {
         console.error('Error loading hashtag management:', e);
     }
 }
 
-async function editHashtag(id) {
-    const allTemplates = await getAllNoteTemplates();
-    const template = allTemplates.find(t => t.id === id);
+// Update preference when changed
+async function updatePreference(newPreference) {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    const success = await updateTemplatePreference(adminId, newPreference);
+    if (success) {
+        currentTemplatePreference = newPreference;
+        showToast('Başarılı', 'Tercih kaydedildi.', 'success');
+        await loadNoteTemplates(); // Reload templates with new preference
+    } else {
+        showToast('Hata', 'Tercih kaydedilemedi.', 'error');
+    }
+}
+
+// Make updatePreference globally accessible
+window.updatePreference = updatePreference;
+
+async function editHashtag(id, isPersonal = false) {
+    const adminId = localStorage.getItem('vegas_admin_id');
+    
+    // Get the template from appropriate source
+    let template;
+    if (isPersonal) {
+        const personalTemplates = await getPersonalNoteTemplates(adminId);
+        template = personalTemplates.find(t => t.id === id);
+    } else {
+        const allTemplates = await getAllNoteTemplates();
+        template = allTemplates.find(t => t.id === id);
+    }
+    
     if (!template) return;
     
-    document.getElementById('hashtagModalTitle').textContent = 'Şablonu Düzenle';
+    document.getElementById('hashtagModalTitle').textContent = isPersonal ? 'Kişisel Şablonu Düzenle' : 'Şablonu Düzenle';
     document.getElementById('hashtagId').value = id;
     document.getElementById('hashtagTag').value = template.tag;
     document.getElementById('hashtagText').value = template.text;
     document.getElementById('hashtagCategory').value = template.category;
     document.getElementById('hashtagIcon').value = template.icon || '';
     document.getElementById('hashtagActive').checked = template.is_active;
+    document.getElementById('hashtagIsPersonal').value = isPersonal ? 'true' : 'false';
     
     document.getElementById('hashtagModal').classList.remove('hidden');
 }
 
-async function deleteHashtagItem(id) {
-    if (!confirm('Bu şablonu silmek istediğinize emin misiniz?')) return;
+async function deleteHashtagItem(id, isPersonal = false) {
+    const confirmMsg = isPersonal ? 'Bu kişisel şablonu silmek istediğinize emin misiniz?' : 'Bu şablonu silmek istediğinize emin misiniz?';
+    if (!confirm(confirmMsg)) return;
     
     const success = await deleteNoteTemplate(id);
     if (success) {
@@ -2428,9 +2495,20 @@ async function deleteHashtagItem(id) {
 
 // Hashtag Modal Events
 document.getElementById('addHashtagBtn')?.addEventListener('click', () => {
-    document.getElementById('hashtagModalTitle').textContent = 'Yeni Şablon Ekle';
+    document.getElementById('hashtagModalTitle').textContent = 'Yeni Genel Şablon Ekle';
     document.getElementById('hashtagForm').reset();
     document.getElementById('hashtagId').value = '';
+    document.getElementById('hashtagIsPersonal').value = 'false';
+    document.getElementById('hashtagActive').checked = true;
+    document.getElementById('hashtagModal').classList.remove('hidden');
+});
+
+// Add personal template button
+document.getElementById('addPersonalHashtagBtn')?.addEventListener('click', () => {
+    document.getElementById('hashtagModalTitle').textContent = 'Yeni Kişisel Şablon Ekle';
+    document.getElementById('hashtagForm').reset();
+    document.getElementById('hashtagId').value = '';
+    document.getElementById('hashtagIsPersonal').value = 'true';
     document.getElementById('hashtagActive').checked = true;
     document.getElementById('hashtagModal').classList.remove('hidden');
 });
@@ -2448,6 +2526,7 @@ document.getElementById('hashtagForm')?.addEventListener('submit', async (e) => 
     const category = document.getElementById('hashtagCategory').value;
     const icon = document.getElementById('hashtagIcon').value.trim() || '📝';
     const isActive = document.getElementById('hashtagActive').checked;
+    const isPersonal = document.getElementById('hashtagIsPersonal').value === 'true';
     
     // Ensure tag starts with #
     if (!tag.startsWith('#')) tag = '#' + tag;
@@ -2457,15 +2536,20 @@ document.getElementById('hashtagForm')?.addEventListener('submit', async (e) => 
         return;
     }
     
+    const adminId = localStorage.getItem('vegas_admin_id');
+    
     let success;
     if (id) {
         success = await updateNoteTemplate(id, { tag, text, category, icon, is_active: isActive });
     } else {
-        success = await addNoteTemplate(tag, text, category, icon);
+        // For new templates, pass createdBy (null for global, adminId for personal)
+        const createdBy = isPersonal ? adminId : null;
+        success = await addNoteTemplate(tag, text, category, icon, createdBy);
     }
     
     if (success) {
-        showToast('Başarılı', id ? 'Şablon güncellendi.' : 'Şablon eklendi.', 'success');
+        const msg = isPersonal ? 'Kişisel şablon' : 'Şablon';
+        showToast('Başarılı', id ? `${msg} güncellendi.` : `${msg} eklendi.`, 'success');
         document.getElementById('hashtagModal').classList.add('hidden');
         await loadHashtagManagement();
         await loadNoteTemplates(); // Refresh for confirm modal

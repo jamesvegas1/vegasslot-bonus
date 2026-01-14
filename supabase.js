@@ -512,18 +512,55 @@ async function updateAdminPasswordSecure(id, newPassword) {
 // NOTE TEMPLATES (HASHTAGS)
 // ============================================
 
-// Get all active note templates
-async function getNoteTemplates() {
-    const { data, error } = await supabaseClient
+// Get note templates based on user preference
+// preference: 'global' | 'personal' | 'both'
+async function getNoteTemplates(adminId = null, preference = 'global') {
+    let query = supabaseClient
         .from('note_templates')
         .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+        .eq('is_active', true);
+    
+    if (preference === 'global') {
+        // Only global templates (created_by is null)
+        query = query.is('created_by', null);
+    } else if (preference === 'personal' && adminId) {
+        // Only personal templates for this admin
+        query = query.eq('created_by', adminId);
+    } else if (preference === 'both' && adminId) {
+        // Both global and personal - use OR filter
+        query = query.or(`created_by.is.null,created_by.eq.${adminId}`);
+    }
+    
+    const { data, error } = await query.order('sort_order', { ascending: true });
+    
     if (error) {
         console.error('Error fetching note templates:', error);
         return [];
     }
-    return data;
+    return data || [];
+}
+
+// Get all global note templates (for admin management)
+async function getGlobalNoteTemplates() {
+    const { data, error } = await supabaseClient
+        .from('note_templates')
+        .select('*')
+        .is('created_by', null)
+        .order('sort_order', { ascending: true });
+    if (error) return [];
+    return data || [];
+}
+
+// Get personal note templates for an admin
+async function getPersonalNoteTemplates(adminId) {
+    if (!adminId) return [];
+    const { data, error } = await supabaseClient
+        .from('note_templates')
+        .select('*')
+        .eq('created_by', adminId)
+        .order('sort_order', { ascending: true });
+    if (error) return [];
+    return data || [];
 }
 
 // Get all note templates (including inactive) for admin management
@@ -531,13 +568,14 @@ async function getAllNoteTemplates() {
     const { data, error } = await supabaseClient
         .from('note_templates')
         .select('*')
+        .is('created_by', null) // Only global for management
         .order('sort_order', { ascending: true });
     if (error) return [];
-    return data;
+    return data || [];
 }
 
-// Add new note template
-async function addNoteTemplate(tag, text, category = 'general', icon = '📝') {
+// Add new note template (global or personal)
+async function addNoteTemplate(tag, text, category = 'general', icon = '📝', createdBy = null) {
     // Get max sort_order
     const { data: existing } = await supabaseClient
         .from('note_templates')
@@ -547,15 +585,18 @@ async function addNoteTemplate(tag, text, category = 'general', icon = '📝') {
     
     const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 1;
     
+    const insertData = { 
+        tag: tag.startsWith('#') ? tag : '#' + tag,
+        text, 
+        category, 
+        icon, 
+        sort_order: nextOrder,
+        created_by: createdBy // null = global, UUID = personal
+    };
+    
     const { data, error } = await supabaseClient
         .from('note_templates')
-        .insert([{ 
-            tag: tag.startsWith('#') ? tag : '#' + tag,
-            text, 
-            category, 
-            icon, 
-            sort_order: nextOrder 
-        }])
+        .insert([insertData])
         .select()
         .single();
     
@@ -582,6 +623,27 @@ async function deleteNoteTemplate(id) {
         .from('note_templates')
         .delete()
         .eq('id', id);
+    return !error;
+}
+
+// Get admin's template preference
+async function getTemplatePreference(adminId) {
+    if (!adminId) return 'global';
+    const { data, error } = await supabaseClient
+        .from('admins')
+        .select('template_preference')
+        .eq('id', adminId)
+        .single();
+    if (error || !data) return 'global';
+    return data.template_preference || 'global';
+}
+
+// Update admin's template preference
+async function updateTemplatePreference(adminId, preference) {
+    const { error } = await supabaseClient
+        .from('admins')
+        .update({ template_preference: preference })
+        .eq('id', adminId);
     return !error;
 }
 
