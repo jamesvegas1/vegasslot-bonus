@@ -1260,6 +1260,18 @@ function openConfirm(id, actionType) {
     // Render hashtag buttons based on action type
     renderHashtagButtons(actionType);
 
+    // Show/hide block user checkbox (only for reject action)
+    const blockUserSection = document.getElementById('blockUserSection');
+    const blockUserCheckbox = document.getElementById('blockUserCheckbox');
+    if (blockUserSection) {
+        if (actionType === 'reject') {
+            blockUserSection.classList.remove('hidden');
+        } else {
+            blockUserSection.classList.add('hidden');
+        }
+    }
+    if (blockUserCheckbox) blockUserCheckbox.checked = false;
+
     confirmModal.classList.remove('hidden');
     // Clear admin note input
     const noteInput = document.getElementById('adminNoteInput');
@@ -1271,7 +1283,20 @@ async function rejectRequest(id) {
     if (req && req.dbId) {
         const adminNote = document.getElementById('adminNoteInput')?.value || '';
         await saveRequestStatus(req.dbId, 'rejected', adminNote);
-        showToast('Talep Reddedildi', `${id} başarıyla reddedildi.`, 'error');
+        
+        // Check if block checkbox is checked
+        const blockUserCheckbox = document.getElementById('blockUserCheckbox');
+        if (blockUserCheckbox && blockUserCheckbox.checked) {
+            const currentAdminId = localStorage.getItem('vegas_admin_id');
+            const reason = adminNote || 'Spam/gereksiz talep';
+            await blockUser(req.username.toLowerCase(), currentAdminId, reason, 60); // 60 minutes = 1 hour
+            showToast('Talep Reddedildi & Kullanıcı Engellendi', `${req.username} 1 saat engellendi.`, 'error');
+            // Update blocked badge
+            loadBlockedUsersBadge();
+        } else {
+            showToast('Talep Reddedildi', `${id} başarıyla reddedildi.`, 'error');
+        }
+        
         closeConfirmModal();
         closeDetailModal();
     }
@@ -1477,6 +1502,7 @@ function handleNavigation(view) {
     const personnelManagementSection = document.getElementById('personnelManagementSection');
     const hashtagManagementSection = document.getElementById('hashtagManagementSection');
     const performanceSection = document.getElementById('performanceSection');
+    const blockedUsersSection = document.getElementById('blockedUsersSection');
 
     // Reset All Views First
     if (statsGrid) statsGrid.style.display = 'none';
@@ -1486,6 +1512,7 @@ function handleNavigation(view) {
     if (personnelManagementSection) personnelManagementSection.style.display = 'none';
     if (hashtagManagementSection) hashtagManagementSection.style.display = 'none';
     if (performanceSection) performanceSection.style.display = 'none';
+    if (blockedUsersSection) blockedUsersSection.style.display = 'none';
     if (analyticsSection) {
         analyticsSection.classList.add('hidden');
         analyticsSection.style.display = 'none';
@@ -1563,6 +1590,13 @@ function handleNavigation(view) {
         if (performanceSection) {
             performanceSection.style.display = 'block';
             loadPerformanceStats();
+        }
+    } else if (view === 'blockedUsers') {
+        if (pageTitle) pageTitle.textContent = 'Engelli Üyeler';
+        const blockedUsersSection = document.getElementById('blockedUsersSection');
+        if (blockedUsersSection) {
+            blockedUsersSection.style.display = 'block';
+            loadBlockedUsers();
         }
     }
 }
@@ -2806,3 +2840,108 @@ document.querySelectorAll('.period-btn').forEach(btn => {
         loadPerformanceStats();
     });
 });
+
+// ============================================
+// BLOCKED USERS MANAGEMENT
+// ============================================
+
+// Load blocked users badge count
+async function loadBlockedUsersBadge() {
+    try {
+        const blockedUsers = await getBlockedUsers();
+        const badge = document.getElementById('blockedBadge');
+        if (badge) {
+            badge.textContent = blockedUsers.length;
+            badge.style.display = blockedUsers.length > 0 ? 'inline-flex' : 'none';
+        }
+    } catch (e) {
+        console.error('Error loading blocked badge:', e);
+    }
+}
+
+// Load and render blocked users list
+async function loadBlockedUsers() {
+    const tableBody = document.getElementById('blockedUsersTableBody');
+    const emptyState = document.getElementById('emptyBlockedState');
+    const tableWrapper = document.querySelector('.blocked-users-table-wrapper');
+    
+    if (!tableBody) return;
+    
+    try {
+        const blockedUsers = await getBlockedUsers();
+        
+        if (blockedUsers.length === 0) {
+            if (tableWrapper) tableWrapper.style.display = 'none';
+            if (emptyState) emptyState.classList.remove('hidden');
+            return;
+        }
+        
+        if (tableWrapper) tableWrapper.style.display = 'block';
+        if (emptyState) emptyState.classList.add('hidden');
+        
+        tableBody.innerHTML = blockedUsers.map(block => {
+            const blockedAt = new Date(block.blocked_at);
+            const blockedUntil = new Date(block.blocked_until);
+            const now = new Date();
+            const remainingMs = blockedUntil - now;
+            const remainingMinutes = Math.max(0, Math.ceil(remainingMs / 60000));
+            
+            const blockedByName = block.admins?.username || 'Bilinmiyor';
+            const reason = block.reason || '-';
+            
+            return `
+                <tr data-block-id="${block.id}">
+                    <td><strong>${escapeHtml(block.username)}</strong></td>
+                    <td>${escapeHtml(blockedByName)}</td>
+                    <td class="reason-cell">${escapeHtml(reason)}</td>
+                    <td>${blockedAt.toLocaleDateString('tr-TR')} ${blockedAt.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}</td>
+                    <td>
+                        <span class="remaining-time ${remainingMinutes < 10 ? 'expiring-soon' : ''}">${remainingMinutes} dk</span>
+                    </td>
+                    <td>
+                        <button class="btn-unblock" onclick="unblockUserAction('${escapeHtml(block.username)}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"></path>
+                            </svg>
+                            Engeli Kaldır
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        // Update badge
+        loadBlockedUsersBadge();
+        
+    } catch (e) {
+        console.error('Error loading blocked users:', e);
+        tableBody.innerHTML = '<tr><td colspan="6" class="error-cell">Yüklenirken hata oluştu.</td></tr>';
+    }
+}
+
+// Unblock user action
+async function unblockUserAction(username) {
+    if (!confirm(`${username} kullanıcısının engelini kaldırmak istediğinize emin misiniz?`)) {
+        return;
+    }
+    
+    try {
+        const success = await unblockUser(username);
+        if (success) {
+            showToast('Engel Kaldırıldı', `${username} artık talep verebilir.`, 'success');
+            loadBlockedUsers();
+            loadBlockedUsersBadge();
+        } else {
+            showToast('Hata', 'Engel kaldırılamadı.', 'error');
+        }
+    } catch (e) {
+        console.error('Error unblocking user:', e);
+        showToast('Hata', 'Bir hata oluştu.', 'error');
+    }
+}
+
+// Make unblockUserAction globally accessible
+window.unblockUserAction = unblockUserAction;
+
+// Load blocked badge on init
+loadBlockedUsersBadge();

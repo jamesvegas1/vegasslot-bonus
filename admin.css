@@ -3385,3 +3385,155 @@ body {
     }
 }
 
+/* ============================================
+   BLOCKED USERS SECTION
+   ============================================ */
+
+/* Block user checkbox in confirm modal */
+.block-user-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+}
+
+.block-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.block-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #ef4444;
+    cursor: pointer;
+}
+
+.block-checkbox-text {
+    font-weight: 500;
+}
+
+/* Blocked Users Table */
+.blocked-users-table-wrapper {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+}
+
+.blocked-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.blocked-users-table th,
+.blocked-users-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.blocked-users-table th {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.blocked-users-table td {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.blocked-users-table tr:last-child td {
+    border-bottom: none;
+}
+
+.blocked-users-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.reason-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+}
+
+.remaining-time {
+    display: inline-flex;
+    padding: 4px 10px;
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.remaining-time.expiring-soon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    animation: pulse-green 1.5s infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.btn-unblock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-unblock:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* Empty Blocked State */
+.empty-blocked-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-tertiary);
+}
+
+.empty-blocked-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-blocked-state p {
+    font-size: 1rem;
+}
+
+/* Blocked Badge in Nav */
+.blocked-badge {
+    background: #ef4444 !important;
+}
+
+.error-cell {
+    text-align: center;
+    color: var(--accent-red);
+    padding: 2rem !important;
+}
+

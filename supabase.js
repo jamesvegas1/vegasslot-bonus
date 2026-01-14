@@ -584,3 +584,91 @@ async function deleteNoteTemplate(id) {
         .eq('id', id);
     return !error;
 }
+
+// ============================================
+// BLOCKED USERS
+// ============================================
+
+// Check if user is blocked
+// Returns: { blocked: boolean, remainingMinutes: number }
+async function checkUserBlocked(username) {
+    // First cleanup expired blocks
+    await supabaseClient.rpc('cleanup_expired_blocks').catch(() => {});
+    
+    const { data, error } = await supabaseClient
+        .from('blocked_users')
+        .select('*')
+        .ilike('username', username)
+        .eq('is_active', true)
+        .gt('blocked_until', new Date().toISOString())
+        .order('blocked_until', { ascending: false })
+        .limit(1);
+    
+    if (error || !data || data.length === 0) {
+        return { blocked: false, remainingMinutes: 0 };
+    }
+    
+    const block = data[0];
+    const blockedUntil = new Date(block.blocked_until);
+    const now = new Date();
+    const remainingMs = blockedUntil - now;
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    
+    return { 
+        blocked: true, 
+        remainingMinutes: Math.max(1, remainingMinutes)
+    };
+}
+
+// Block a user for specified duration (default 1 hour)
+async function blockUser(username, blockedBy, reason = '', durationMinutes = 60) {
+    const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+    
+    const { data, error } = await supabaseClient
+        .from('blocked_users')
+        .insert([{
+            username: username.toLowerCase(),
+            blocked_by: blockedBy,
+            blocked_until: blockedUntil,
+            reason: reason,
+            is_active: true
+        }])
+        .select()
+        .single();
+    
+    if (error) {
+        console.error('Error blocking user:', error);
+        return null;
+    }
+    return data;
+}
+
+// Unblock a user (deactivate all active blocks)
+async function unblockUser(username) {
+    const { error } = await supabaseClient
+        .from('blocked_users')
+        .update({ is_active: false })
+        .ilike('username', username)
+        .eq('is_active', true);
+    
+    return !error;
+}
+
+// Get all currently blocked users
+async function getBlockedUsers() {
+    // First cleanup expired blocks
+    await supabaseClient.rpc('cleanup_expired_blocks').catch(() => {});
+    
+    const { data, error } = await supabaseClient
+        .from('blocked_users')
+        .select('*, admins:blocked_by(username)')
+        .eq('is_active', true)
+        .gt('blocked_until', new Date().toISOString())
+        .order('blocked_at', { ascending: false });
+    
+    if (error) {
+        console.error('Error fetching blocked users:', error);
+        return [];
+    }
+    return data || [];
+}

@@ -56,6 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function checkRateLimit(username) {
         try {
+            // 1. Check if user is blocked (spam protection)
+            const blockResult = await checkUserBlocked(username);
+            if (blockResult.blocked) {
+                rateLimitWarning.classList.remove('hidden');
+                submitBtn.disabled = true;
+                rateLimitWarning.innerHTML = `⚠️ Sistem şu anda yoğun. Lütfen <strong>${blockResult.remainingMinutes} dakika</strong> sonra tekrar deneyiniz.`;
+                return;
+            }
+            
+            // 2. Check for pending requests or cooldown
             const result = await checkUserHasPendingRequest(username);
             if (result.limited) {
                 rateLimitWarning.classList.remove('hidden');
