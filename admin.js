@@ -2517,17 +2517,43 @@ document.getElementById('closeHashtagModal')?.addEventListener('click', () => {
     document.getElementById('hashtagModal').classList.add('hidden');
 });
 
+// Icon picker dropdown toggle
+const iconInput = document.getElementById('hashtagIcon');
+const iconDropdown = document.getElementById('iconPickerDropdown');
+
+if (iconInput && iconDropdown) {
+    iconInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+        iconDropdown.classList.toggle('hidden');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.icon-picker-wrapper')) {
+            iconDropdown.classList.add('hidden');
+        }
+    });
+}
+
 // Icon picker click handlers
 document.querySelectorAll('.icon-option').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const icon = btn.dataset.icon;
         const iconInput = document.getElementById('hashtagIcon');
+        const iconDropdown = document.getElementById('iconPickerDropdown');
+        
         if (iconInput) {
             iconInput.value = icon;
         }
         // Update selected state
         document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
+        
+        // Close dropdown
+        if (iconDropdown) {
+            iconDropdown.classList.add('hidden');
+        }
     });
 });
 
