@@ -64,13 +64,33 @@ async function deleteAdmin(id) {
 }
 
 // BONUS REQUESTS
-async function getBonusRequests() {
+// Default: fetch last 30 days for performance
+async function getBonusRequests(daysBack = 30) {
+    // Calculate date filter
+    const filterDate = new Date();
+    filterDate.setDate(filterDate.getDate() - daysBack);
+    const filterDateStr = filterDate.toISOString();
+    
+    const { data, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .gte('created_at', filterDateStr)
+        .order('created_at', { ascending: false });
+    if (error) {
+        console.error('Error fetching requests:', error);
+        return [];
+    }
+    return data;
+}
+
+// Fetch ALL requests (for exports/reports only)
+async function getAllBonusRequests() {
     const { data, error } = await supabaseClient
         .from('bonus_requests')
         .select('*')
         .order('created_at', { ascending: false });
     if (error) {
-        console.error('Error fetching requests:', error);
+        console.error('Error fetching all requests:', error);
         return [];
     }
     return data;
@@ -764,4 +784,107 @@ async function getBlockedUsers() {
         console.error('getBlockedUsers exception:', e);
         return [];
     }
+}
+
+// ============================================
+// ADMIN CACHE (reduces unnecessary queries)
+// ============================================
+let adminCache = null;
+let adminCacheTime = 0;
+const ADMIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getAdminsCached() {
+    const now = Date.now();
+    if (adminCache && (now - adminCacheTime) < ADMIN_CACHE_TTL) {
+        return adminCache;
+    }
+    adminCache = await getAdmins();
+    adminCacheTime = now;
+    return adminCache;
+}
+
+function invalidateAdminCache() {
+    adminCache = null;
+    adminCacheTime = 0;
+}
+
+// ============================================
+// SUPABASE REALTIME SUBSCRIPTIONS
+// ============================================
+let realtimeChannel = null;
+let realtimeCallbacks = {
+    onInsert: null,
+    onUpdate: null,
+    onDelete: null
+};
+
+// Subscribe to bonus_requests table changes
+function subscribeToRequests(callbacks = {}) {
+    // Unsubscribe from existing channel if any
+    unsubscribeFromRequests();
+    
+    realtimeCallbacks = { ...realtimeCallbacks, ...callbacks };
+    
+    realtimeChannel = supabaseClient
+        .channel('bonus_requests_changes')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'bonus_requests'
+            },
+            (payload) => {
+                dbLog('🔔 Realtime INSERT:', payload.new);
+                if (realtimeCallbacks.onInsert) {
+                    realtimeCallbacks.onInsert(payload.new);
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'bonus_requests'
+            },
+            (payload) => {
+                dbLog('🔔 Realtime UPDATE:', payload.new);
+                if (realtimeCallbacks.onUpdate) {
+                    realtimeCallbacks.onUpdate(payload.new, payload.old);
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'bonus_requests'
+            },
+            (payload) => {
+                dbLog('🔔 Realtime DELETE:', payload.old);
+                if (realtimeCallbacks.onDelete) {
+                    realtimeCallbacks.onDelete(payload.old);
+                }
+            }
+        )
+        .subscribe((status) => {
+            dbLog('📡 Realtime subscription status:', status);
+        });
+    
+    return realtimeChannel;
+}
+
+// Unsubscribe from realtime updates
+function unsubscribeFromRequests() {
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+}
+
+// Check if realtime is connected
+function isRealtimeConnected() {
+    return realtimeChannel !== null;
 }

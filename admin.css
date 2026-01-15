@@ -221,6 +221,41 @@ body {
     box-shadow: 0 0 5px var(--accent-emerald);
 }
 
+.status-indicators {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Realtime indicator */
+.realtime-indicator {
+    color: var(--text-secondary);
+    background: rgba(100, 100, 100, 0.1);
+    border-color: rgba(100, 100, 100, 0.2);
+}
+
+.realtime-indicator .realtime-dot {
+    background: var(--text-secondary);
+    box-shadow: none;
+}
+
+.realtime-indicator.connected {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.realtime-indicator.connected .realtime-dot {
+    background: #3b82f6;
+    box-shadow: 0 0 5px #3b82f6;
+    animation: pulse-realtime 2s infinite;
+}
+
+@keyframes pulse-realtime {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 .top-actions {
     display: flex;
     align-items: center;

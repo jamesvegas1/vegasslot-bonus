@@ -184,6 +184,10 @@ let noteTemplates = [];
     await loadNoteTemplates();
     
     await loadRequests();
+    
+    // Initialize Supabase Realtime for instant updates
+    initializeRealtime();
+    
     // Restore last active tab or default to dashboard
     const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
     handleNavigation(lastTab);
@@ -191,8 +195,9 @@ let noteTemplates = [];
     debugLog('✅ Admin Panel Ready');
     debugLog('💡 Run debugBonusSystem() in console for full debug info');
 })();
-// Auto-refresh every 30 seconds to catch new requests
+// Realtime & notification state
 let lastPendingCount = 0;
+let realtimeEnabled = false;
 
 // Notification sound function - 3 tone chime
 function playNotificationSound() {
@@ -225,19 +230,100 @@ function playNotificationSound() {
     } catch (e) { console.log('Audio error:', e); }
 }
 
-// Auto-refresh every 30 seconds
-setInterval(async () => {
-    const previousCount = lastPendingCount;
-    await loadRequests();
+// Initialize Supabase Realtime subscription
+function initializeRealtime() {
+    if (realtimeEnabled) return;
     
-    // Check for new requests and play sound
-    const currentPending = requests.filter(r => r.status === 'pending').length;
-    if (previousCount > 0 && currentPending > previousCount) {
-        playNotificationSound();
-        showToast('Yeni Talep!', 'Yeni bir bonus talebi geldi.', 'info');
+    debugLog('🔌 Initializing Supabase Realtime...');
+    
+    subscribeToRequests({
+        onInsert: (newRequest) => {
+            debugLog('📥 New request received via Realtime:', newRequest.request_id);
+            // Add to local state
+            const adminList = adminCache || [];
+            const adminMap = {};
+            adminList.forEach(a => { adminMap[a.id] = a.username; });
+            
+            const mappedRequest = {
+                id: newRequest.request_id,
+                dbId: newRequest.id,
+                username: newRequest.username,
+                bonusType: newRequest.bonus_type,
+                bonusTypeLabel: newRequest.bonus_type_label,
+                note: newRequest.note || '',
+                adminNote: newRequest.admin_note || '',
+                timestamp: newRequest.created_at,
+                status: newRequest.status,
+                notified: newRequest.notified,
+                assignedTo: newRequest.assigned_to,
+                assignedAt: newRequest.assigned_at,
+                processedBy: newRequest.processed_by,
+                processedByName: adminMap[newRequest.processed_by] || null,
+                processedAt: newRequest.processed_at
+            };
+            
+            // Add to beginning of array (newest first)
+            requests.unshift(mappedRequest);
+            
+            // Play sound and show toast
+            playNotificationSound();
+            showToast('Yeni Talep!', `${newRequest.username} - ${newRequest.bonus_type_label || newRequest.bonus_type}`, 'info');
+            
+            // Update UI
+            renderTable();
+            updateStats();
+        },
+        onUpdate: (updatedRequest, oldRequest) => {
+            debugLog('📝 Request updated via Realtime:', updatedRequest.request_id);
+            // Find and update in local state
+            const index = requests.findIndex(r => r.dbId === updatedRequest.id);
+            if (index !== -1) {
+                const adminList = adminCache || [];
+                const adminMap = {};
+                adminList.forEach(a => { adminMap[a.id] = a.username; });
+                
+                requests[index] = {
+                    ...requests[index],
+                    status: updatedRequest.status,
+                    adminNote: updatedRequest.admin_note || '',
+                    assignedTo: updatedRequest.assigned_to,
+                    assignedAt: updatedRequest.assigned_at,
+                    processedBy: updatedRequest.processed_by,
+                    processedByName: adminMap[updatedRequest.processed_by] || null,
+                    processedAt: updatedRequest.processed_at
+                };
+                
+                // Update UI
+                renderTable();
+                updateStats();
+            }
+        },
+        onDelete: (deletedRequest) => {
+            debugLog('🗑️ Request deleted via Realtime:', deletedRequest.request_id);
+            // Remove from local state
+            requests = requests.filter(r => r.dbId !== deletedRequest.id);
+            renderTable();
+            updateStats();
+        }
+    });
+    
+    realtimeEnabled = true;
+    debugLog('✅ Realtime subscription active');
+    
+    // Show realtime indicator
+    const indicator = document.getElementById('realtimeIndicator');
+    if (indicator) indicator.classList.add('connected');
+}
+
+// Fallback polling every 60 seconds (reduced from 30s since we have realtime)
+setInterval(async () => {
+    if (!realtimeEnabled) {
+        // Realtime not working, use polling
+        await loadRequests();
     }
-    lastPendingCount = currentPending;
-}, 30000);
+    // Always update pending count for comparison
+    lastPendingCount = requests.filter(r => r.status === 'pending').length;
+}, 60000);
 
 // Manual refresh function
 async function manualRefresh() {
@@ -324,14 +410,15 @@ async function loadRequests() {
         // Cleanup requests assigned to offline admins (release them back to pool)
         await cleanupOfflineAdminRequests();
         
-        let data = await getBonusRequests();
-        debugLog('   Total requests from DB:', data.length);
+        // Fetch last 30 days of requests (performance optimization)
+        let data = await getBonusRequests(30);
+        debugLog('   Requests from DB (last 30 days):', data.length);
         
         // No auto-assign - all pending requests visible to all online admins
         // First admin to click "view" will claim it
         
-        // Get admin list to resolve processed_by names
-        const adminList = await getAdmins();
+        // Get admin list (cached for performance)
+        const adminList = await getAdminsCached();
         const adminMap = {};
         adminList.forEach(a => { adminMap[a.id] = a.username; });
         
