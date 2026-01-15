@@ -315,15 +315,7 @@ function initializeRealtime() {
     if (indicator) indicator.classList.add('connected');
 }
 
-// Fallback polling every 60 seconds (reduced from 30s since we have realtime)
-setInterval(async () => {
-    if (!realtimeEnabled) {
-        // Realtime not working, use polling
-        await loadRequests();
-    }
-    // Always update pending count for comparison
-    lastPendingCount = requests.filter(r => r.status === 'pending').length;
-}, 60000);
+// No polling - using Realtime only for better performance
 
 // Manual refresh function
 async function manualRefresh() {
