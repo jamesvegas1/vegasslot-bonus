@@ -3537,18 +3537,17 @@ body {
     padding: 2rem !important;
 }
 
-
 /* ============================================
-   PERSONAL TEMPLATES - Clean Design
+   PERSONAL TEMPLATES
    ============================================ */
 
 /* Preference Section */
 .preference-section {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, transparent 100%);
-    border: 1px solid rgba(16, 185, 129, 0.12);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -3556,40 +3555,32 @@ body {
 }
 
 .preference-label {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
 
 .preference-select {
-    padding: 0.6rem 2.5rem 0.6rem 1rem;
-    background: var(--sidebar-bg);
+    padding: 0.5rem 1rem;
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text-primary);
     font-size: 0.9rem;
-    font-weight: 500;
     cursor: pointer;
-    min-width: 280px;
-    transition: all 0.2s;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
+    min-width: 250px;
 }
 
-.preference-select:hover,
-.preference-select:focus {
+.preference-select:hover {
     border-color: var(--accent-emerald);
-    outline: none;
 }
 
 /* Personal Templates Section */
 .personal-templates-section {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    padding: 1.25rem;
     margin-bottom: 2rem;
 }
 
@@ -3597,59 +3588,42 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .section-subheader h3 {
     font-size: 1rem;
     color: var(--text-primary);
     margin: 0;
-    font-weight: 600;
 }
 
 .section-desc-small {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-tertiary);
-    margin: -0.5rem 0 1rem 0;
+    margin-bottom: 1rem;
 }
 
 .personal-list {
     min-height: 60px;
 }
 
-.personal-list .empty-state {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-}
-
 /* Global Templates Section */
 .global-templates-section {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
+    margin-top: 1.5rem;
 }
 
-.global-templates-section > .section-subheader {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+.global-templates-section .section-subheader {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-color);
 }
 
-.global-templates-section .hashtag-categories {
-    margin-top: 0;
-}
-
 .admin-only-label {
-    font-size: 0.7rem;
-    color: var(--accent-gold);
-    background: rgba(251, 191, 36, 0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: 500;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 /* Secondary Button */
@@ -3658,19 +3632,19 @@ body {
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: transparent;
-    color: var(--accent-emerald);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
     border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: var(--accent-emerald);
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
 }
 
 /* Readonly Badge */
@@ -3678,81 +3652,6 @@ body {
     font-size: 0.7rem;
     color: var(--text-tertiary);
     background: rgba(255, 255, 255, 0.05);
-    padding: 4px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
-}
-
-/* Icon Picker - Dropdown Style */
-.icon-picker-wrapper {
-    position: relative;
-    width: 80px;
-}
-
-.icon-input-container {
-    position: relative;
-}
-
-.icon-input-container input {
-    width: 70px;
-    text-align: center;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.6rem;
-}
-
-.icon-picker-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 6px;
-    background: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 10px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    z-index: 100;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    animation: slideDown 0.15s ease-out;
-}
-
-.icon-picker-dropdown.hidden {
-    display: none;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.icon-option {
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-dark);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.icon-option:hover {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: var(--accent-emerald);
-    transform: scale(1.1);
-}
-
-.icon-option.selected {
-    background: rgba(16, 185, 129, 0.25);
-    border-color: var(--accent-emerald);
 }

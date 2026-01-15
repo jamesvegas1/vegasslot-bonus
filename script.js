@@ -172,7 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 2. Create Request Object
-            const requestId = '#REQ-' + Math.floor(1000 + Math.random() * 9000);
+            // Generate unique ID with timestamp + random to prevent duplicates
+            const timestamp = Date.now().toString(36);
+            const randomPart = Math.random().toString(36).substring(2, 8);
+            const requestId = '#REQ-' + timestamp + randomPart;
             const newRequest = {
                 id: requestId,
                 username: username,
