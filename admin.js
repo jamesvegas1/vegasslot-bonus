@@ -186,7 +186,7 @@ let noteTemplates = [];
     await loadRequests();
     
     // Initialize Supabase Realtime for instant updates
-    initializeRealtime();
+    // initializeRealtime(); // TEMPORARILY DISABLED FOR TESTING
     
     // Restore last active tab or default to dashboard
     const lastTab = sessionStorage.getItem('vegas_admin_tab') || 'dashboard';
@@ -1035,6 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function renderTable() {
+    console.log('📊 renderTable called at:', new Date().toLocaleTimeString());
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
