@@ -482,12 +482,11 @@ body {
 }
 
 .data-table tbody tr {
-    animation: slideUpRow 0.4s ease-out forwards;
-    opacity: 0;
-    transform: translateY(10px);
+    /* Animation removed to prevent flickering on re-render */
+    opacity: 1;
 }
 
-/* Staggered Delay */
+/* Staggered Delay - disabled */
 .data-table tbody tr:nth-child(1) {
     animation-delay: 0.1s;
 }
