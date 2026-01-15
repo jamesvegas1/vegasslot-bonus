@@ -236,9 +236,26 @@ function initializeRealtime() {
     
     debugLog('🔌 Initializing Supabase Realtime...');
     
+    // Debounce timer to prevent rapid re-renders
+    let renderDebounceTimer = null;
+    const debouncedRender = () => {
+        if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+        renderDebounceTimer = setTimeout(() => {
+            renderTable();
+            updateStats();
+        }, 100); // Wait 100ms before rendering
+    };
+    
     subscribeToRequests({
         onInsert: (newRequest) => {
             debugLog('📥 New request received via Realtime:', newRequest.request_id);
+            
+            // Check if already exists (prevent duplicates)
+            if (requests.some(r => r.dbId === newRequest.id)) {
+                debugLog('   ↳ Already exists, skipping');
+                return;
+            }
+            
             // Add to local state
             const adminList = adminCache || [];
             const adminMap = {};
@@ -269,9 +286,8 @@ function initializeRealtime() {
             playNotificationSound();
             showToast('Yeni Talep!', `${newRequest.username} - ${newRequest.bonus_type_label || newRequest.bonus_type}`, 'info');
             
-            // Update UI
-            renderTable();
-            updateStats();
+            // Update UI (debounced)
+            debouncedRender();
         },
         onUpdate: (updatedRequest, oldRequest) => {
             debugLog('📝 Request updated via Realtime:', updatedRequest.request_id);
@@ -281,6 +297,15 @@ function initializeRealtime() {
                 const adminList = adminCache || [];
                 const adminMap = {};
                 adminList.forEach(a => { adminMap[a.id] = a.username; });
+                
+                // Check if anything actually changed
+                const current = requests[index];
+                if (current.status === updatedRequest.status && 
+                    current.adminNote === (updatedRequest.admin_note || '') &&
+                    current.assignedTo === updatedRequest.assigned_to) {
+                    debugLog('   ↳ No changes, skipping');
+                    return;
+                }
                 
                 requests[index] = {
                     ...requests[index],
@@ -293,17 +318,18 @@ function initializeRealtime() {
                     processedAt: updatedRequest.processed_at
                 };
                 
-                // Update UI
-                renderTable();
-                updateStats();
+                // Update UI (debounced)
+                debouncedRender();
             }
         },
         onDelete: (deletedRequest) => {
             debugLog('🗑️ Request deleted via Realtime:', deletedRequest.request_id);
             // Remove from local state
+            const existed = requests.some(r => r.dbId === deletedRequest.id);
+            if (!existed) return;
+            
             requests = requests.filter(r => r.dbId !== deletedRequest.id);
-            renderTable();
-            updateStats();
+            debouncedRender();
         }
     });
     
