@@ -646,6 +646,10 @@ body {
     padding: 4px 10px;
     border-radius: 20px;
     display: inline-block;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tag-welcome {
