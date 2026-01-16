@@ -1471,12 +1471,8 @@ const bulkCountSpan = document.querySelector('.bulk-count');
 
 function updateBulkActionBar() {
     const count = selectedRequestIds.size;
-    console.log('updateBulkActionBar called, count:', count, 'bulkActionBar:', bulkActionBar);
     if (count > 0) {
-        if (bulkActionBar) {
-            bulkActionBar.classList.remove('hidden');
-            console.log('Showing bulk action bar');
-        }
+        if (bulkActionBar) bulkActionBar.classList.remove('hidden');
         if (bulkCountSpan) bulkCountSpan.textContent = `${count} öğe seçildi`;
     } else {
         if (bulkActionBar) bulkActionBar.classList.add('hidden');
