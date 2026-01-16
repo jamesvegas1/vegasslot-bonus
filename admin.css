@@ -3503,6 +3503,10 @@ body {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 .block-checkbox-label {
@@ -3523,6 +3527,22 @@ body {
 
 .block-checkbox-text {
     font-weight: 500;
+}
+
+.block-duration-select {
+    background: var(--card-bg);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 100px;
+}
+
+.block-duration-select:focus {
+    outline: none;
+    border-color: #ef4444;
 }
 
 /* Blocked Users Table */

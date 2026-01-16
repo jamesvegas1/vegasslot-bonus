@@ -1396,8 +1396,18 @@ async function rejectRequest(id) {
         if (blockUserCheckbox && blockUserCheckbox.checked) {
             const currentAdminId = localStorage.getItem('vegas_admin_id');
             const reason = adminNote || 'Spam/gereksiz talep';
-            await blockUser(req.username.toLowerCase(), currentAdminId, reason, 60); // 60 minutes = 1 hour
-            showToast('Talep Reddedildi & Kullanıcı Engellendi', `${req.username} 1 saat engellendi.`, 'error');
+            const blockDurationSelect = document.getElementById('blockDurationSelect');
+            const duration = blockDurationSelect ? parseInt(blockDurationSelect.value) : 1440; // Default 1 day
+            await blockUser(req.username.toLowerCase(), currentAdminId, reason, duration);
+            
+            // Format duration text
+            let durationText = '';
+            if (duration < 60) durationText = `${duration} dakika`;
+            else if (duration < 1440) durationText = `${duration / 60} saat`;
+            else if (duration < 10080) durationText = `${duration / 1440} gün`;
+            else durationText = `${duration / 10080} hafta`;
+            
+            showToast('Talep Reddedildi & Kullanıcı Engellendi', `${req.username} ${durationText} engellendi.`, 'error');
             // Update blocked badge
             loadBlockedUsersBadge();
         } else {

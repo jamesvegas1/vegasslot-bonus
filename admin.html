@@ -1112,8 +1112,17 @@
             <div class="block-user-section hidden" id="blockUserSection">
                 <label class="block-checkbox-label">
                     <input type="checkbox" id="blockUserCheckbox">
-                    <span class="block-checkbox-text">🚫 Kullanıcıyı 1 saat engelle (spam önleme)</span>
+                    <span class="block-checkbox-text">🚫 Kullanıcıyı engelle</span>
                 </label>
+                <select id="blockDurationSelect" class="block-duration-select">
+                    <option value="60">1 Saat</option>
+                    <option value="180">3 Saat</option>
+                    <option value="300">5 Saat</option>
+                    <option value="720">12 Saat</option>
+                    <option value="1440" selected>1 Gün</option>
+                    <option value="4320">3 Gün</option>
+                    <option value="10080">1 Hafta</option>
+                </select>
             </div>
             <div class="confirm-actions">
                 <button class="btn-cancel">İptal</button>
