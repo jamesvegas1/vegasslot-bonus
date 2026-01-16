@@ -282,9 +282,8 @@ function initializeRealtime() {
             // Add to beginning of array (newest first)
             requests.unshift(mappedRequest);
             
-            // Play sound notification
-            playNotificationSound();
-            // Toast notification disabled per request
+            // Sound and toast notifications disabled per request
+            // playNotificationSound();
             // showToast('Yeni Talep!', `${newRequest.username} - ${newRequest.bonus_type_label || newRequest.bonus_type}`, 'info');
             
             // Update UI (debounced)
