@@ -20,6 +20,7 @@ function escapeHtml(text) {
 let requests = [];
 let currentRequestId = null;
 let currentActionType = null;
+let selectedRequestIds = new Set(); // For bulk actions
 
 // --- Elements ---
 const detailModal = document.getElementById('detailModal');
@@ -1175,9 +1176,10 @@ function renderTable() {
         }
         if (noteDisplay.length > 50) noteDisplay = noteDisplay.substring(0, 50) + '...';
 
+        const isSelected = selectedRequestIds.has(req.id);
         row.innerHTML = `
                 <td class="col-check">
-                    <input type="checkbox" class="row-checkbox" value="${req.id}">
+                    ${req.status === 'pending' ? `<input type="checkbox" class="row-checkbox" value="${req.id}" ${isSelected ? 'checked' : ''}>` : ''}
                 </td>
                 <td class="col-id">${req.id}</td>
                 <td class="col-user">
@@ -1459,6 +1461,138 @@ if (searchInput) searchInput.addEventListener('input', renderTable);
 if (filterType) filterType.addEventListener('change', renderTable);
 if (filterStatus) filterStatus.addEventListener('change', renderTable);
 if (filterDate) filterDate.addEventListener('change', renderTable);
+
+// --- Bulk Actions ---
+const selectAllCheckbox = document.getElementById('selectAll');
+const bulkActionBar = document.getElementById('bulkActionBar');
+const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+const bulkRejectBtn = document.getElementById('bulkRejectBtn');
+const bulkCountSpan = document.querySelector('.bulk-count');
+
+function updateBulkActionBar() {
+    const count = selectedRequestIds.size;
+    if (count > 0) {
+        if (bulkActionBar) bulkActionBar.classList.remove('hidden');
+        if (bulkCountSpan) bulkCountSpan.textContent = `${count} öğe seçildi`;
+    } else {
+        if (bulkActionBar) bulkActionBar.classList.add('hidden');
+    }
+}
+
+function clearSelection() {
+    selectedRequestIds.clear();
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+    updateBulkActionBar();
+}
+
+// Select All Checkbox
+if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        // Only select pending requests that are visible
+        const visiblePendingCheckboxes = document.querySelectorAll('.row-checkbox');
+        visiblePendingCheckboxes.forEach(cb => {
+            const reqId = cb.value;
+            const req = requests.find(r => r.id === reqId);
+            if (req && req.status === 'pending') {
+                cb.checked = isChecked;
+                if (isChecked) {
+                    selectedRequestIds.add(reqId);
+                } else {
+                    selectedRequestIds.delete(reqId);
+                }
+            }
+        });
+        updateBulkActionBar();
+    });
+}
+
+// Individual Row Checkbox Handler (delegated)
+if (tableBody) {
+    tableBody.addEventListener('change', (e) => {
+        if (e.target.classList.contains('row-checkbox')) {
+            const reqId = e.target.value;
+            if (e.target.checked) {
+                selectedRequestIds.add(reqId);
+            } else {
+                selectedRequestIds.delete(reqId);
+                if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            }
+            updateBulkActionBar();
+        }
+    });
+}
+
+// Bulk Approve
+if (bulkApproveBtn) {
+    bulkApproveBtn.addEventListener('click', async () => {
+        if (selectedRequestIds.size === 0) return;
+        
+        const count = selectedRequestIds.size;
+        if (!confirm(`${count} talebi onaylamak istediğinize emin misiniz?`)) return;
+        
+        bulkApproveBtn.disabled = true;
+        bulkApproveBtn.textContent = 'İşleniyor...';
+        
+        let successCount = 0;
+        const currentAdminId = localStorage.getItem('vegas_admin_id');
+        
+        for (const reqId of selectedRequestIds) {
+            const req = requests.find(r => r.id === reqId);
+            if (req && req.dbId && req.status === 'pending') {
+                try {
+                    await updateBonusRequestStatus(req.dbId, 'approved', '', currentAdminId);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error approving ${reqId}:`, error);
+                }
+            }
+        }
+        
+        showToast('Toplu Onay', `${successCount} talep başarıyla onaylandı.`, 'success');
+        clearSelection();
+        await loadRequests();
+        
+        bulkApproveBtn.disabled = false;
+        bulkApproveBtn.textContent = 'Seçilenleri Onayla';
+    });
+}
+
+// Bulk Reject
+if (bulkRejectBtn) {
+    bulkRejectBtn.addEventListener('click', async () => {
+        if (selectedRequestIds.size === 0) return;
+        
+        const count = selectedRequestIds.size;
+        if (!confirm(`${count} talebi reddetmek istediğinize emin misiniz?`)) return;
+        
+        bulkRejectBtn.disabled = true;
+        bulkRejectBtn.textContent = 'İşleniyor...';
+        
+        let successCount = 0;
+        const currentAdminId = localStorage.getItem('vegas_admin_id');
+        
+        for (const reqId of selectedRequestIds) {
+            const req = requests.find(r => r.id === reqId);
+            if (req && req.dbId && req.status === 'pending') {
+                try {
+                    await updateBonusRequestStatus(req.dbId, 'rejected', '', currentAdminId);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error rejecting ${reqId}:`, error);
+                }
+            }
+        }
+        
+        showToast('Toplu Red', `${successCount} talep başarıyla reddedildi.`, 'error');
+        clearSelection();
+        await loadRequests();
+        
+        bulkRejectBtn.disabled = false;
+        bulkRejectBtn.textContent = 'Seçilenleri Reddet';
+    });
+}
 
 // CSV Export
 if (exportCsvBtn) {
