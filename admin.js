@@ -472,7 +472,22 @@ async function saveRequestStatus(dbId, status, adminNote = '') {
     try {
         const currentAdminId = localStorage.getItem('vegas_admin_id');
         await updateBonusRequestStatus(dbId, status, adminNote, currentAdminId);
-        await loadRequests();
+        
+        // Update local state immediately (Realtime will also sync)
+        const reqIndex = requests.findIndex(r => r.dbId === dbId);
+        if (reqIndex !== -1) {
+            requests[reqIndex].status = status;
+            requests[reqIndex].adminNote = adminNote;
+            requests[reqIndex].processedBy = currentAdminId;
+            requests[reqIndex].processedAt = new Date().toISOString();
+            
+            // Get admin name from cache
+            const adminName = localStorage.getItem('vegas_admin_user');
+            if (adminName) requests[reqIndex].processedByName = adminName;
+            
+            renderTable();
+            updateStats();
+        }
     } catch (error) {
         console.error('Error saving request:', error);
     }
