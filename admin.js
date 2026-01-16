@@ -1387,7 +1387,13 @@ function openConfirm(id, actionType) {
 
 async function rejectRequest(id) {
     const req = requests.find(r => r.id === id);
-    if (req && req.dbId) {
+    if (!req || !req.dbId) {
+        console.error('Request not found:', id);
+        showToast('Hata', 'Talep bulunamadı.', 'error');
+        return;
+    }
+    
+    try {
         const adminNote = document.getElementById('adminNoteInput')?.value || '';
         await saveRequestStatus(req.dbId, 'rejected', adminNote);
         
@@ -1416,6 +1422,9 @@ async function rejectRequest(id) {
         
         closeConfirmModal();
         closeDetailModal();
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        showToast('Hata', 'Talep reddedilirken bir hata oluştu.', 'error');
     }
 }
 
