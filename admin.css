@@ -458,7 +458,11 @@ body {
 }
 
 .bulk-actions.hidden {
-    display: none;
+    display: none !important;
+}
+
+.bulk-actions:not(.hidden) {
+    display: flex !important;
 }
 
 .bulk-count {
