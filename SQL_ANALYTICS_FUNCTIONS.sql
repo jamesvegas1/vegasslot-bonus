@@ -86,7 +86,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. Get Admin Performance Stats for a period
+-- 5. Get Admin Daily Performance (for trend chart)
+CREATE OR REPLACE FUNCTION get_admin_daily_performance(days_back INT DEFAULT 7)
+RETURNS TABLE (
+    admin_id UUID,
+    day_date DATE,
+    count BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        br.processed_by as admin_id,
+        DATE(br.processed_at) as day_date,
+        COUNT(*)::BIGINT as count
+    FROM bonus_requests br
+    WHERE br.processed_by IS NOT NULL
+      AND br.processed_at IS NOT NULL
+      AND br.processed_at >= NOW() - (days_back || ' days')::INTERVAL
+    GROUP BY br.processed_by, DATE(br.processed_at)
+    ORDER BY day_date, count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 6. Get Admin Performance Stats for a period
 CREATE OR REPLACE FUNCTION get_admin_performance(start_date TIMESTAMPTZ, end_date TIMESTAMPTZ)
 RETURNS TABLE (
     admin_id UUID,

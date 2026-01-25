@@ -276,6 +276,19 @@ async function getAdminPerformanceStats(startDate, endDate) {
     return data || [];
 }
 
+// Get admin daily performance for trend chart
+async function getAdminDailyPerformance(daysBack = 7) {
+    const { data, error } = await supabaseClient.rpc('get_admin_daily_performance', {
+        days_back: daysBack
+    });
+    
+    if (error) {
+        console.error('Error fetching admin daily performance:', error);
+        return [];
+    }
+    return data || [];
+}
+
 // Fetch ALL requests (for exports/reports only)
 async function getAllBonusRequests() {
     const { data, error } = await supabaseClient

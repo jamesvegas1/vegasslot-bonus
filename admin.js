@@ -2845,7 +2845,7 @@ async function loadPerformanceStats() {
         renderPerformanceGrid(sortedStats);
         
         // Render charts
-        renderPerformanceCharts(sortedStats);
+        await renderPerformanceCharts(sortedStats);
         
         // Update time
         if (updateTime) {
@@ -2967,7 +2967,7 @@ function renderPerformanceGrid(stats) {
     }).join('');
 }
 
-function renderPerformanceCharts(stats) {
+async function renderPerformanceCharts(stats) {
     // Trend Chart - Last 7 days by admin
     const trendCtx = document.getElementById('performanceTrendChart');
     const avgTimeCtx = document.getElementById('avgTimeChart');
@@ -3000,19 +3000,21 @@ function renderPerformanceCharts(stats) {
         dayLabels.push(d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }));
     }
     
-    // Calculate daily counts per admin
+    // Get daily performance data from RPC
+    console.log('⚡ Loading admin daily performance from RPC...');
+    const dailyData = await getAdminDailyPerformance(7);
+    console.log('⚡ Daily performance loaded:', dailyData.length, 'records');
+    
+    // Build datasets from RPC data
     const datasets = topAdmins.map((admin, idx) => {
         const colors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
         
         const dailyCounts = days.map(day => {
-            const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
-            const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-            
-            return requests.filter(r => {
-                if (!r.processedAt || r.processedBy !== admin.id) return false;
-                const t = new Date(r.processedAt).getTime();
-                return t >= dayStart && t < dayEnd;
-            }).length;
+            const dayStr = day.toISOString().split('T')[0]; // YYYY-MM-DD
+            const found = dailyData.find(d => 
+                d.admin_id === admin.id && d.day_date === dayStr
+            );
+            return found ? parseInt(found.count) : 0;
         });
         
         return {
