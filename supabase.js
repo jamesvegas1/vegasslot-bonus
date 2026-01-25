@@ -71,18 +71,36 @@ async function getBonusRequests(daysBack = 30) {
     filterDate.setDate(filterDate.getDate() - daysBack);
     const filterDateStr = filterDate.toISOString();
     
-    // Supabase default limit is 1000, we need more for stats
-    const { data, error } = await supabaseClient
-        .from('bonus_requests')
-        .select('*')
-        .gte('created_at', filterDateStr)
-        .order('created_at', { ascending: false })
-        .range(0, 49999); // Get up to 50000 records
-    if (error) {
-        console.error('Error fetching requests:', error);
-        return [];
+    // Supabase has 1000 row limit, use pagination for more
+    let allData = [];
+    let from = 0;
+    const batchSize = 1000;
+    
+    while (true) {
+        const { data, error } = await supabaseClient
+            .from('bonus_requests')
+            .select('*')
+            .gte('created_at', filterDateStr)
+            .order('created_at', { ascending: false })
+            .range(from, from + batchSize - 1);
+        
+        if (error) {
+            console.error('Error fetching requests:', error);
+            break;
+        }
+        
+        if (!data || data.length === 0) break;
+        
+        allData = allData.concat(data);
+        
+        // If we got less than batch size, we've reached the end
+        if (data.length < batchSize) break;
+        
+        from += batchSize;
     }
-    return data;
+    
+    console.log(`📊 Loaded ${allData.length} requests from last ${daysBack} days`);
+    return allData;
 }
 
 // Fetch ALL requests (for exports/reports only)
