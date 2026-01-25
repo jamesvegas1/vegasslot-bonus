@@ -569,6 +569,8 @@
                             <button class="period-btn active" data-period="today">Bugün</button>
                             <button class="period-btn" data-period="week">Bu Hafta</button>
                             <button class="period-btn" data-period="month">Bu Ay</button>
+                            <button class="period-btn custom-date-btn" data-period="custom">📅 Özel</button>
+                            <span class="custom-date-range" id="customDateRangeLabel" style="display: none;"></span>
                         </div>
                     </div>
 
@@ -1001,6 +1003,39 @@
             </div>
 
         </main>
+    </div>
+
+    <!-- Custom Date Range Modal -->
+    <div class="modal-overlay hidden" id="dateRangeModal">
+        <div class="modal-box date-range-modal">
+            <div class="modal-header-simple">
+                <h3>📅 Tarih Aralığı Seç</h3>
+                <button class="modal-close-btn" onclick="closeDateRangeModal()">&times;</button>
+            </div>
+            <div class="date-range-content">
+                <div class="quick-ranges">
+                    <span class="quick-range-label">Hızlı Seçim:</span>
+                    <button class="quick-range-btn" data-days="3">Son 3 Gün</button>
+                    <button class="quick-range-btn" data-days="14">Son 14 Gün</button>
+                    <button class="quick-range-btn" data-days="60">Son 2 Ay</button>
+                    <button class="quick-range-btn" data-days="90">Son 3 Ay</button>
+                </div>
+                <div class="date-inputs">
+                    <div class="date-input-group">
+                        <label>Başlangıç Tarihi</label>
+                        <input type="date" id="dateRangeStart" class="date-input">
+                    </div>
+                    <div class="date-input-group">
+                        <label>Bitiş Tarihi</label>
+                        <input type="date" id="dateRangeEnd" class="date-input">
+                    </div>
+                </div>
+                <div class="date-range-actions">
+                    <button class="btn-secondary" onclick="closeDateRangeModal()">İptal</button>
+                    <button class="btn-primary" onclick="applyCustomDateRange()">Uygula</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Request Detail Modal Overlay -->

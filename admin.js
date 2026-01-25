@@ -2915,11 +2915,15 @@ async function loadPerformanceStats() {
         // Get time boundaries based on period
         const now = new Date();
         let startTime;
+        let endTime = now.getTime(); // Default end time is now
         
         if (currentPerformancePeriod === 'today') {
             startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         } else if (currentPerformancePeriod === 'week') {
             startTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+        } else if (currentPerformancePeriod === 'custom' && customDateStart && customDateEnd) {
+            startTime = customDateStart.getTime();
+            endTime = customDateEnd.getTime();
         } else {
             startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
         }
@@ -2927,7 +2931,8 @@ async function loadPerformanceStats() {
         // Filter processed requests in period
         const processedRequests = requests.filter(r => {
             if (!r.processedAt || !r.processedBy) return false;
-            return new Date(r.processedAt).getTime() >= startTime;
+            const processedTime = new Date(r.processedAt).getTime();
+            return processedTime >= startTime && processedTime <= endTime;
         });
         
         // DEBUG: Performance stats
@@ -3258,14 +3263,112 @@ function renderPerformanceCharts(stats) {
     });
 }
 
+// Custom date range variables
+let customDateStart = null;
+let customDateEnd = null;
+
 // Period filter handlers
 document.querySelectorAll('.period-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+        const period = btn.dataset.period;
+        
+        // If custom button clicked, show date picker modal
+        if (period === 'custom') {
+            openDateRangeModal();
+            return;
+        }
+        
+        // Reset custom date and hide label
+        customDateStart = null;
+        customDateEnd = null;
+        const label = document.getElementById('customDateRangeLabel');
+        if (label) label.style.display = 'none';
+        
         document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentPerformancePeriod = btn.dataset.period;
+        currentPerformancePeriod = period;
         loadPerformanceStats();
     });
+});
+
+// Date Range Modal Functions
+function openDateRangeModal() {
+    const modal = document.getElementById('dateRangeModal');
+    if (modal) {
+        // Set default dates
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        document.getElementById('dateRangeEnd').value = today.toISOString().split('T')[0];
+        document.getElementById('dateRangeStart').value = weekAgo.toISOString().split('T')[0];
+        
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeDateRangeModal() {
+    const modal = document.getElementById('dateRangeModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function applyCustomDateRange() {
+    const startInput = document.getElementById('dateRangeStart');
+    const endInput = document.getElementById('dateRangeEnd');
+    
+    if (!startInput.value || !endInput.value) {
+        alert('Lütfen başlangıç ve bitiş tarihlerini seçin.');
+        return;
+    }
+    
+    const start = new Date(startInput.value);
+    const end = new Date(endInput.value);
+    
+    if (start > end) {
+        alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+        return;
+    }
+    
+    // Set end to end of day
+    end.setHours(23, 59, 59, 999);
+    
+    customDateStart = start;
+    customDateEnd = end;
+    currentPerformancePeriod = 'custom';
+    
+    // Update UI
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.period-btn[data-period="custom"]')?.classList.add('active');
+    
+    // Show date range label
+    const label = document.getElementById('customDateRangeLabel');
+    if (label) {
+        const startStr = start.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+        const endStr = end.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+        label.textContent = `${startStr} - ${endStr}`;
+        label.style.display = 'inline-flex';
+    }
+    
+    closeDateRangeModal();
+    loadPerformanceStats();
+}
+
+// Quick range buttons
+document.querySelectorAll('.quick-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const days = parseInt(btn.dataset.days);
+        const end = new Date();
+        const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+        
+        document.getElementById('dateRangeStart').value = start.toISOString().split('T')[0];
+        document.getElementById('dateRangeEnd').value = end.toISOString().split('T')[0];
+    });
+});
+
+// Close modal on backdrop click
+document.getElementById('dateRangeModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'dateRangeModal') {
+        closeDateRangeModal();
+    }
 });
 
 // ============================================
