@@ -71,11 +71,13 @@ async function getBonusRequests(daysBack = 30) {
     filterDate.setDate(filterDate.getDate() - daysBack);
     const filterDateStr = filterDate.toISOString();
     
+    // Supabase default limit is 1000, we need more for stats
     const { data, error } = await supabaseClient
         .from('bonus_requests')
         .select('*')
         .gte('created_at', filterDateStr)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(0, 49999); // Get up to 50000 records
     if (error) {
         console.error('Error fetching requests:', error);
         return [];
