@@ -65,42 +65,110 @@ async function deleteAdmin(id) {
 
 // BONUS REQUESTS
 // Default: fetch last 30 days for performance
+// Fast: Get only recent requests for table display (limit 500)
 async function getBonusRequests(daysBack = 30) {
-    // Calculate date filter
     const filterDate = new Date();
     filterDate.setDate(filterDate.getDate() - daysBack);
     const filterDateStr = filterDate.toISOString();
     
-    // Supabase has 1000 row limit, use pagination for more
-    let allData = [];
-    let from = 0;
-    const batchSize = 1000;
+    // Get pending requests first (most important for operators)
+    const { data: pendingData, error: pendingError } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(500);
     
-    while (true) {
-        const { data, error } = await supabaseClient
-            .from('bonus_requests')
-            .select('*')
-            .gte('created_at', filterDateStr)
-            .order('created_at', { ascending: false })
-            .range(from, from + batchSize - 1);
-        
-        if (error) {
-            console.error('Error fetching requests:', error);
-            break;
-        }
-        
-        if (!data || data.length === 0) break;
-        
-        allData = allData.concat(data);
-        
-        // If we got less than batch size, we've reached the end
-        if (data.length < batchSize) break;
-        
-        from += batchSize;
+    // Get recent processed requests
+    const { data: processedData, error: processedError } = await supabaseClient
+        .from('bonus_requests')
+        .select('*')
+        .neq('status', 'pending')
+        .gte('created_at', filterDateStr)
+        .order('created_at', { ascending: false })
+        .limit(500);
+    
+    if (pendingError) console.error('Error fetching pending:', pendingError);
+    if (processedError) console.error('Error fetching processed:', processedError);
+    
+    // Combine: pending first, then processed
+    const allData = [...(pendingData || []), ...(processedData || [])];
+    
+    console.log(`⚡ Fast load: ${pendingData?.length || 0} pending + ${processedData?.length || 0} processed`);
+    return allData;
+}
+
+// Get dashboard statistics using COUNT queries (very fast)
+async function getDashboardStats() {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const prevWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const prevMonthStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    
+    // Run all count queries in parallel
+    const [
+        todayTotal, todayApproved,
+        weekTotal, weekApproved,
+        monthTotal, monthApproved,
+        prevWeekTotal, prevMonthTotal,
+        pendingCount
+    ] = await Promise.all([
+        // Today
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', todayStart),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', todayStart).eq('status', 'approved'),
+        // Week
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('status', 'approved'),
+        // Month
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', monthAgo),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', monthAgo).eq('status', 'approved'),
+        // Previous periods for trend
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', prevWeekStart).lt('created_at', weekAgo),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lt('created_at', monthAgo),
+        // Pending
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+    ]);
+    
+    return {
+        today: {
+            total: todayTotal.count || 0,
+            approved: todayApproved.count || 0
+        },
+        week: {
+            total: weekTotal.count || 0,
+            approved: weekApproved.count || 0
+        },
+        month: {
+            total: monthTotal.count || 0,
+            approved: monthApproved.count || 0
+        },
+        prevWeek: prevWeekTotal.count || 0,
+        prevMonth: prevMonthTotal.count || 0,
+        pending: pendingCount.count || 0
+    };
+}
+
+// Get performance stats using aggregate queries
+async function getPerformanceStats(startDate, endDate) {
+    const startStr = startDate.toISOString();
+    const endStr = endDate ? endDate.toISOString() : new Date().toISOString();
+    
+    // Get processed requests with admin info for the period
+    const { data, error } = await supabaseClient
+        .from('bonus_requests')
+        .select('processed_by, processed_at, status, created_at')
+        .not('processed_by', 'is', null)
+        .gte('processed_at', startStr)
+        .lte('processed_at', endStr);
+    
+    if (error) {
+        console.error('Error fetching performance stats:', error);
+        return [];
     }
     
-    console.log(`📊 Loaded ${allData.length} requests from last ${daysBack} days`);
-    return allData;
+    return data || [];
 }
 
 // Fetch ALL requests (for exports/reports only)

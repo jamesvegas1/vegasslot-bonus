@@ -808,32 +808,26 @@ function updateCharts() {
 }
 
 // --- Analysis Dashboard Functions ---
-function updateAnalysisDashboard() {
+async function updateAnalysisDashboard() {
     const dashboard = document.querySelector('.analysis-dashboard');
     if (!dashboard) return;
 
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-    const monthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-
-    // DEBUG: Log time boundaries
-    console.log('🔍 Dashboard Debug:');
-    console.log('  Now:', now.toISOString());
-    console.log('  Today Start:', new Date(todayStart).toISOString());
-    console.log('  Week Ago:', new Date(weekAgo).toISOString());
-    console.log('  Month Ago:', new Date(monthAgo).toISOString());
-    console.log('  Total requests in memory:', requests.length);
     
-    // DEBUG: Check sample timestamps
-    if (requests.length > 0) {
-        const firstReq = requests[0];
-        const lastReq = requests[requests.length - 1];
-        console.log('  First request timestamp:', firstReq.timestamp, '→', new Date(firstReq.timestamp).toISOString());
-        console.log('  Last request timestamp:', lastReq.timestamp, '→', new Date(lastReq.timestamp).toISOString());
-    }
+    // Use fast aggregate queries instead of loading all data
+    console.log('⚡ Loading dashboard stats with aggregate queries...');
+    const stats = await getDashboardStats();
+    console.log('⚡ Dashboard stats loaded:', stats);
 
-    // Helper: Mode function
+    // 1. Today Stats
+    document.getElementById('dateToday').textContent = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    document.getElementById('todayTotal').textContent = stats.today.total;
+    document.getElementById('todayApproved').textContent = stats.today.approved;
+    
+    // For unique users and top bonus, use loaded requests (limited set)
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= todayStart);
+    const getUniqueUsers = (arr) => new Set(arr.map(r => r.username)).size;
     const getMode = (arr) => {
         if (arr.length === 0) return '--';
         const counts = {};
@@ -841,74 +835,42 @@ function updateAnalysisDashboard() {
         let mode = null;
         arr.forEach(val => {
             counts[val] = (counts[val] || 0) + 1;
-            if (counts[val] > max) {
-                max = counts[val];
-                mode = val;
-            }
+            if (counts[val] > max) { max = counts[val]; mode = val; }
         });
         return mode;
     };
-
-    // Helper: Uniques
-    const getUniqueUsers = (arr) => new Set(arr.map(r => r.username)).size;
-
-    // 1. Today Stats
-    const todayReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= todayStart);
-    
-    // DEBUG: Filter results
-    console.log('  Today requests:', todayReqs.length);
-
-    document.getElementById('dateToday').textContent = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-    document.getElementById('todayTotal').textContent = todayReqs.length;
-    document.getElementById('todayApproved').textContent = todayReqs.filter(r => r.status === 'approved').length;
     document.getElementById('todayUsers').textContent = getUniqueUsers(todayReqs);
     document.getElementById('todayTop').textContent = getMode(todayReqs.map(r => r.bonusTypeLabel || r.bonusType));
 
     // 2. Last 7 Days
-    const weekReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= weekAgo);
-    console.log('  Week requests:', weekReqs.length);
-    const dayDiffWeek = 7;
-    const weekAvg = (weekReqs.length / dayDiffWeek).toFixed(1);
-    const weekApproved = weekReqs.filter(r => r.status === 'approved').length;
-    const weekRate = weekReqs.length > 0 ? ((weekApproved / weekReqs.length) * 100).toFixed(0) + '%' : '0%';
-
-    // Trend Logic (Compare last 7 days vs previous 7 days)
-    const prevWeekAgo = weekAgo - 7 * 24 * 60 * 60 * 1000;
-    const prevWeekReqs = requests.filter(r => {
-        const t = r.timestamp && new Date(r.timestamp).getTime();
-        return t >= prevWeekAgo && t < weekAgo;
-    });
-    const weekTrendDiff = weekReqs.length - prevWeekReqs.length;
+    const weekAvg = (stats.week.total / 7).toFixed(1);
+    const weekRate = stats.week.total > 0 ? ((stats.week.approved / stats.week.total) * 100).toFixed(0) + '%' : '0%';
+    const weekTrendDiff = stats.week.total - stats.prevWeek;
     const weekTrendSign = weekTrendDiff >= 0 ? '+' : '';
     const weekTrendText = `${weekTrendSign}${weekTrendDiff} vs geçen hafta`;
 
     document.getElementById('dateWeek').textContent = 'Son 7 Gün';
-    document.getElementById('weekTotal').textContent = weekReqs.length;
+    document.getElementById('weekTotal').textContent = stats.week.total;
     document.getElementById('weekAvg').textContent = weekAvg;
     document.getElementById('weekRate').textContent = weekRate;
     document.getElementById('weekTrend').textContent = weekTrendText;
 
     // 3. Last 30 Days
-    const monthReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= monthAgo);
-    console.log('  Month requests:', monthReqs.length);
-
-    // Growth (Compare last 30 vs previous 30)
-    const prevMonthAgo = monthAgo - 30 * 24 * 60 * 60 * 1000;
-    const prevMonthReqs = requests.filter(r => {
-        const t = r.timestamp && new Date(r.timestamp).getTime();
-        return t >= prevMonthAgo && t < monthAgo;
-    });
-
     let monthGrowth = '0%';
-    if (prevMonthReqs.length > 0) {
-        const growth = ((monthReqs.length - prevMonthReqs.length) / prevMonthReqs.length) * 100;
+    if (stats.prevMonth > 0) {
+        const growth = ((stats.month.total - stats.prevMonth) / stats.prevMonth) * 100;
         monthGrowth = (growth > 0 ? '+' : '') + growth.toFixed(0) + '%';
-    } else if (monthReqs.length > 0) {
-        monthGrowth = '+100%'; // Infinite growth if prev was 0
+    } else if (stats.month.total > 0) {
+        monthGrowth = '+100%';
     }
 
+    const monthReqs = requests.filter(r => {
+        const monthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+        return r.timestamp && new Date(r.timestamp).getTime() >= monthAgo;
+    });
+
     document.getElementById('dateMonth').textContent = 'Son 30 Gün';
-    document.getElementById('monthTotal').textContent = monthReqs.length;
+    document.getElementById('monthTotal').textContent = stats.month.total;
     document.getElementById('monthUsers').textContent = getUniqueUsers(monthReqs);
     document.getElementById('monthTop').textContent = getMode(monthReqs.map(r => r.bonusTypeLabel || r.bonusType));
     document.getElementById('monthGrowth').textContent = monthGrowth;
