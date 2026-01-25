@@ -817,6 +817,22 @@ function updateAnalysisDashboard() {
     const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
     const monthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
 
+    // DEBUG: Log time boundaries
+    console.log('🔍 Dashboard Debug:');
+    console.log('  Now:', now.toISOString());
+    console.log('  Today Start:', new Date(todayStart).toISOString());
+    console.log('  Week Ago:', new Date(weekAgo).toISOString());
+    console.log('  Month Ago:', new Date(monthAgo).toISOString());
+    console.log('  Total requests in memory:', requests.length);
+    
+    // DEBUG: Check sample timestamps
+    if (requests.length > 0) {
+        const firstReq = requests[0];
+        const lastReq = requests[requests.length - 1];
+        console.log('  First request timestamp:', firstReq.timestamp, '→', new Date(firstReq.timestamp).toISOString());
+        console.log('  Last request timestamp:', lastReq.timestamp, '→', new Date(lastReq.timestamp).toISOString());
+    }
+
     // Helper: Mode function
     const getMode = (arr) => {
         if (arr.length === 0) return '--';
@@ -838,6 +854,9 @@ function updateAnalysisDashboard() {
 
     // 1. Today Stats
     const todayReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= todayStart);
+    
+    // DEBUG: Filter results
+    console.log('  Today requests:', todayReqs.length);
 
     document.getElementById('dateToday').textContent = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
     document.getElementById('todayTotal').textContent = todayReqs.length;
@@ -847,6 +866,7 @@ function updateAnalysisDashboard() {
 
     // 2. Last 7 Days
     const weekReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= weekAgo);
+    console.log('  Week requests:', weekReqs.length);
     const dayDiffWeek = 7;
     const weekAvg = (weekReqs.length / dayDiffWeek).toFixed(1);
     const weekApproved = weekReqs.filter(r => r.status === 'approved').length;
@@ -870,6 +890,7 @@ function updateAnalysisDashboard() {
 
     // 3. Last 30 Days
     const monthReqs = requests.filter(r => r.timestamp && new Date(r.timestamp).getTime() >= monthAgo);
+    console.log('  Month requests:', monthReqs.length);
 
     // Growth (Compare last 30 vs previous 30)
     const prevMonthAgo = monthAgo - 30 * 24 * 60 * 60 * 1000;
@@ -2908,6 +2929,15 @@ async function loadPerformanceStats() {
             if (!r.processedAt || !r.processedBy) return false;
             return new Date(r.processedAt).getTime() >= startTime;
         });
+        
+        // DEBUG: Performance stats
+        console.log('🔍 Performance Debug:');
+        console.log('  Period:', currentPerformancePeriod);
+        console.log('  Start Time:', new Date(startTime).toISOString());
+        console.log('  Total requests:', requests.length);
+        console.log('  Requests with processedAt:', requests.filter(r => r.processedAt).length);
+        console.log('  Requests with processedBy:', requests.filter(r => r.processedBy).length);
+        console.log('  Filtered processedRequests:', processedRequests.length);
         
         // Calculate stats per admin
         const adminStats = {};
