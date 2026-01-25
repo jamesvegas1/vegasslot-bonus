@@ -259,6 +259,23 @@ async function getTopUsersToday() {
     return data || [];
 }
 
+// Get admin performance stats for a period
+async function getAdminPerformanceStats(startDate, endDate) {
+    const startStr = startDate.toISOString();
+    const endStr = endDate.toISOString();
+    
+    const { data, error } = await supabaseClient.rpc('get_admin_performance', {
+        start_date: startStr,
+        end_date: endStr
+    });
+    
+    if (error) {
+        console.error('Error fetching admin performance:', error);
+        return [];
+    }
+    return data || [];
+}
+
 // Fetch ALL requests (for exports/reports only)
 async function getAllBonusRequests() {
     const { data, error } = await supabaseClient

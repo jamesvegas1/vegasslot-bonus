@@ -85,3 +85,30 @@ BEGIN
     LIMIT 10;
 END;
 $$ LANGUAGE plpgsql;
+
+-- 5. Get Admin Performance Stats for a period
+CREATE OR REPLACE FUNCTION get_admin_performance(start_date TIMESTAMPTZ, end_date TIMESTAMPTZ)
+RETURNS TABLE (
+    admin_id UUID,
+    total_count BIGINT,
+    approved_count BIGINT,
+    rejected_count BIGINT,
+    avg_time_minutes NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        br.processed_by as admin_id,
+        COUNT(*)::BIGINT as total_count,
+        COUNT(*) FILTER (WHERE br.status = 'approved')::BIGINT as approved_count,
+        COUNT(*) FILTER (WHERE br.status = 'rejected')::BIGINT as rejected_count,
+        ROUND(AVG(EXTRACT(EPOCH FROM (br.processed_at - br.created_at)) / 60)::NUMERIC, 1) as avg_time_minutes
+    FROM bonus_requests br
+    WHERE br.processed_by IS NOT NULL
+      AND br.processed_at IS NOT NULL
+      AND br.processed_at >= start_date
+      AND br.processed_at <= end_date
+    GROUP BY br.processed_by
+    ORDER BY total_count DESC;
+END;
+$$ LANGUAGE plpgsql;

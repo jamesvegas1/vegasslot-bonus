@@ -2764,39 +2764,35 @@ async function loadPerformanceStats() {
         
         // Get time boundaries based on period
         const now = new Date();
-        let startTime;
-        let endTime = now.getTime(); // Default end time is now
+        let startDate, endDate;
         
         if (currentPerformancePeriod === 'today') {
-            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            endDate = now;
         } else if (currentPerformancePeriod === 'week') {
-            startTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            endDate = now;
         } else if (currentPerformancePeriod === 'custom' && customDateStart && customDateEnd) {
-            startTime = customDateStart.getTime();
-            endTime = customDateEnd.getTime();
+            startDate = customDateStart;
+            endDate = customDateEnd;
         } else {
-            startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            endDate = now;
         }
         
-        // Filter processed requests in period
-        const processedRequests = requests.filter(r => {
-            if (!r.processedAt || !r.processedBy) return false;
-            const processedTime = new Date(r.processedAt).getTime();
-            return processedTime >= startTime && processedTime <= endTime;
-        });
-        
-        // DEBUG: Performance stats
-        console.log('🔍 Performance Debug:');
+        console.log('⚡ Loading performance stats from RPC...');
         console.log('  Period:', currentPerformancePeriod);
-        console.log('  Start Time:', new Date(startTime).toISOString());
-        console.log('  Total requests:', requests.length);
-        console.log('  Requests with processedAt:', requests.filter(r => r.processedAt).length);
-        console.log('  Requests with processedBy:', requests.filter(r => r.processedBy).length);
-        console.log('  Filtered processedRequests:', processedRequests.length);
+        console.log('  Start:', startDate.toISOString());
+        console.log('  End:', endDate.toISOString());
         
-        // Calculate stats per admin
+        // Get performance data from RPC
+        const perfData = await getAdminPerformanceStats(startDate, endDate);
+        console.log('⚡ Performance data loaded:', perfData);
+        
+        // Build stats object with admin info
         const adminStats = {};
         
+        // Initialize all admins with zero stats
         adminsCache.forEach(admin => {
             adminStats[admin.id] = {
                 id: admin.id,
@@ -2806,35 +2802,23 @@ async function loadPerformanceStats() {
                 total: 0,
                 approved: 0,
                 rejected: 0,
-                totalTime: 0,
                 avgTime: 0
             };
         });
         
-        processedRequests.forEach(req => {
-            if (!adminStats[req.processedBy]) return;
-            
-            const stats = adminStats[req.processedBy];
-            stats.total++;
-            
-            if (req.status === 'approved') stats.approved++;
-            if (req.status === 'rejected') stats.rejected++;
-            
-            // Calculate processing time (from created to processed)
-            if (req.timestamp && req.processedAt) {
-                const created = new Date(req.timestamp).getTime();
-                const processed = new Date(req.processedAt).getTime();
-                const timeDiff = (processed - created) / 60000; // minutes
-                if (timeDiff > 0 && timeDiff < 1440) { // Max 24 hours
-                    stats.totalTime += timeDiff;
-                }
+        // Fill in data from RPC
+        perfData.forEach(row => {
+            if (adminStats[row.admin_id]) {
+                adminStats[row.admin_id].total = parseInt(row.total_count) || 0;
+                adminStats[row.admin_id].approved = parseInt(row.approved_count) || 0;
+                adminStats[row.admin_id].rejected = parseInt(row.rejected_count) || 0;
+                adminStats[row.admin_id].avgTime = parseFloat(row.avg_time_minutes) || 0;
             }
         });
         
-        // Calculate averages and sort by total
+        // Calculate speed-based success rate and sort
         const sortedStats = Object.values(adminStats)
             .map(s => {
-                s.avgTime = s.total > 0 ? s.totalTime / s.total : 0;
                 // Speed-based success rate: 
                 // ≤3 dk = 100%, 5 dk = 80%, 10 dk = 50%, 15+ dk = 20%
                 if (s.avgTime <= 0 || s.total === 0) {
