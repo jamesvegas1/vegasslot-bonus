@@ -218,6 +218,47 @@ async function getStatusDistribution() {
     };
 }
 
+// =============================================
+// ANALYTICS RPC FUNCTIONS
+// =============================================
+
+// Get top bonuses for today (using RPC)
+async function getTopBonusesToday() {
+    const { data, error } = await supabaseClient.rpc('get_top_bonuses_today');
+    if (error) {
+        console.error('Error fetching top bonuses:', error);
+        return [];
+    }
+    return data || [];
+}
+
+// Get hourly distribution for peak hours chart (using RPC)
+async function getHourlyDistribution() {
+    const { data, error } = await supabaseClient.rpc('get_hourly_distribution');
+    if (error) {
+        console.error('Error fetching hourly distribution:', error);
+        return [];
+    }
+    
+    // Fill in missing hours with 0
+    const hourlyData = new Array(24).fill(0);
+    (data || []).forEach(item => {
+        hourlyData[item.hour] = item.count;
+    });
+    
+    return hourlyData;
+}
+
+// Get top users for today (using RPC)
+async function getTopUsersToday() {
+    const { data, error } = await supabaseClient.rpc('get_top_users_today');
+    if (error) {
+        console.error('Error fetching top users:', error);
+        return [];
+    }
+    return data || [];
+}
+
 // Fetch ALL requests (for exports/reports only)
 async function getAllBonusRequests() {
     const { data, error } = await supabaseClient

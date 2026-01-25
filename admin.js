@@ -756,32 +756,22 @@ async function updateCharts() {
     volumeChart.data.datasets[0].data = dailyData.map(d => d.count);
     volumeChart.update();
 
-    // --- Top Daily Bonuses Logic (uses local requests - approximate) ---
-    updateTopBonuses(requests);
+    // --- Top Daily Bonuses Logic (from RPC) ---
+    updateTopBonuses();
 
     // --- Analysis Dashboard Logic ---
     updateAnalysisDashboard();
 
-    // --- Peak Hours Logic (uses local requests - approximate) ---
+    // --- Peak Hours Logic (from RPC) ---
     if (peakHoursChart) {
-        const peakCounts = new Array(24).fill(0);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-
-        requests.forEach(r => {
-            if (!r.timestamp) return;
-            const d = new Date(r.timestamp);
-            if (d >= weekAgo) {
-                const hour = d.getHours();
-                peakCounts[hour]++;
-            }
-        });
-
-        peakHoursChart.data.datasets[0].data = peakCounts;
+        console.log('⚡ Loading hourly distribution from RPC...');
+        const hourlyData = await getHourlyDistribution();
+        console.log('⚡ Hourly distribution loaded');
+        peakHoursChart.data.datasets[0].data = hourlyData;
         peakHoursChart.update();
     }
 
-    // --- Top Users Logic ---
+    // --- Top Users Logic (from RPC) ---
     updateTopUsers();
 }
 
@@ -854,62 +844,32 @@ async function updateAnalysisDashboard() {
     document.getElementById('monthGrowth').textContent = monthGrowth;
 }
 
-function updateTopBonuses(data) {
+async function updateTopBonuses() {
     const listContainer = document.getElementById('topBonusList');
     if (!listContainer) return;
 
-    // Get today and yesterday timestamps
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
-
-    // Filter for Today
-    const todaysRequests = data.filter(r => {
-        if (!r.timestamp) return false;
-        const t = new Date(r.timestamp).getTime();
-        return t >= startOfToday;
-    });
-
-    // Filter for Yesterday (for trend comparison)
-    const yesterdaysRequests = data.filter(r => {
-        if (!r.timestamp) return false;
-        const t = new Date(r.timestamp).getTime();
-        return t >= startOfYesterday && t < startOfToday;
-    });
-
-    if (todaysRequests.length === 0) {
+    console.log('⚡ Loading top bonuses from RPC...');
+    
+    // Get top bonuses from Supabase RPC
+    const topBonuses = await getTopBonusesToday();
+    
+    if (!topBonuses || topBonuses.length === 0) {
         listContainer.innerHTML = '<div class="empty-state-start">Bugün henüz işlem yok.</div>';
         return;
     }
-
-    // Aggregate by Type for Today
-    const todayCounts = {};
-    const todayUsers = {};
-    todaysRequests.forEach(r => {
-        const type = r.bonusTypeLabel || r.bonusType;
-        todayCounts[type] = (todayCounts[type] || 0) + 1;
-        if (!todayUsers[type]) todayUsers[type] = new Set();
-        todayUsers[type].add(r.username);
-    });
-
-    // Aggregate by Type for Yesterday
-    const yesterdayCounts = {};
-    yesterdaysRequests.forEach(r => {
-        const type = r.bonusTypeLabel || r.bonusType;
-        yesterdayCounts[type] = (yesterdayCounts[type] || 0) + 1;
-    });
+    
+    console.log('⚡ Top bonuses loaded:', topBonuses);
 
     // Calculate totals for percentage
-    const totalToday = todaysRequests.length;
-    const maxCount = Math.max(...Object.values(todayCounts));
-
-    // Sort
-    const sorted = Object.entries(todayCounts)
-        .sort(([, a], [, b]) => b - a);
+    const totalToday = topBonuses.reduce((sum, b) => sum + parseInt(b.count), 0);
+    const maxCount = Math.max(...topBonuses.map(b => parseInt(b.count)));
 
     // Render enhanced widget
-    listContainer.innerHTML = sorted.map(([name, count], index) => {
+    listContainer.innerHTML = topBonuses.map((bonus, index) => {
         const rank = index + 1;
+        const name = bonus.bonus_label || bonus.bonus_type || 'Bilinmeyen';
+        const count = parseInt(bonus.count);
+        
         let rankClass = '';
         if (rank === 1) rankClass = 'top-1';
         else if (rank === 2) rankClass = 'top-2';
@@ -921,30 +881,11 @@ function updateTopBonuses(data) {
         // Calculate progress bar width
         const progressWidth = ((count / maxCount) * 100).toFixed(0);
 
-        // Unique user count
-        const uniqueUsers = todayUsers[name] ? todayUsers[name].size : 0;
-
-        // Trend comparison with yesterday
-        const yesterdayCount = yesterdayCounts[name] || 0;
-        let trendIcon = '';
-        let trendClass = '';
-        if (count > yesterdayCount) {
-            trendIcon = '↑';
-            trendClass = 'trend-up';
-        } else if (count < yesterdayCount) {
-            trendIcon = '↓';
-            trendClass = 'trend-down';
-        } else {
-            trendIcon = '→';
-            trendClass = 'trend-neutral';
-        }
-
         return `
             <div class="top-bonus-item enhanced">
                 <div class="tb-header">
                     <div class="tb-rank ${rankClass}">${rank}</div>
-                            <div class="tb-name">${escapeHtml(name)}</div>
-                    <div class="tb-trend ${trendClass}">${trendIcon}</div>
+                    <div class="tb-name">${escapeHtml(name)}</div>
                 </div>
                 <div class="tb-progress-container">
                     <div class="tb-progress-bar" style="width: ${progressWidth}%"></div>
@@ -958,69 +899,38 @@ function updateTopBonuses(data) {
                         <span class="tb-stat-value">${percentage}%</span>
                         <span class="tb-stat-label">oran</span>
                     </div>
-                    <div class="tb-stat">
-                        <span class="tb-stat-value">${uniqueUsers}</span>
-                        <span class="tb-stat-label">kullanıcı</span>
-                    </div>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-function updateTopUsers() {
+async function updateTopUsers() {
     const tableBody = document.querySelector('#topUsersTable tbody');
-    const filterSelect = document.getElementById('topUserFilter');
-    if (!tableBody || !filterSelect) return;
+    if (!tableBody) return;
 
-    let period = filterSelect.value; // today, week, month
-    const now = new Date();
-    let startTime;
-
-    // Standardize "Today" as Calendar Day (00:00)
-    // Week = Last 7 Days rolling
-    // Month = Last 30 Days rolling
-    if (period === 'today') {
-        startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    } else if (period === 'week') {
-        startTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-    } else {
-        startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-    }
-
-    const filteredReqs = requests.filter(r => {
-        if (!r.timestamp) return false;
-        return new Date(r.timestamp).getTime() >= startTime;
-    });
-
-    if (filteredReqs.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 1rem;">Veri yok.</td></tr>';
+    console.log('⚡ Loading top users from RPC...');
+    
+    // Get top users from Supabase RPC
+    const topUsers = await getTopUsersToday();
+    
+    if (!topUsers || topUsers.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 1rem;">Bugün veri yok.</td></tr>';
         return;
     }
+    
+    console.log('⚡ Top users loaded:', topUsers.length);
 
-    // Aggregate Users
-    const userStats = {};
-    filteredReqs.forEach(r => {
-        if (!userStats[r.username]) {
-            userStats[r.username] = { total: 0, approved: 0 };
-        }
-        userStats[r.username].total++;
-        if (r.status === 'approved') userStats[r.username].approved++;
-    });
-
-    // Sort by Total Descending
-    const sortedUsers = Object.entries(userStats)
-        .sort(([, a], [, b]) => b.total - a.total)
-        .slice(0, 5); // Top 5
-
-    // Render
-    tableBody.innerHTML = sortedUsers.map(([username, stats]) => {
-        const rate = stats.total > 0 ? ((stats.approved / stats.total) * 100).toFixed(0) : 0;
+    // Render top 10
+    tableBody.innerHTML = topUsers.slice(0, 10).map(user => {
+        const total = parseInt(user.request_count);
+        const approved = parseInt(user.approved_count);
+        const rate = total > 0 ? ((approved / total) * 100).toFixed(0) : 0;
         return `
             <tr>
-                <td style="font-weight: 500; color: #fff;">${escapeHtml(username)}</td>
-                <td class="text-right">${stats.total}</td>
-                <td class="text-right success-text" style="color:#10b981">${stats.approved}</td>
+                <td style="font-weight: 500; color: #fff;">${escapeHtml(user.username)}</td>
+                <td class="text-right">${total}</td>
+                <td class="text-right success-text" style="color:#10b981">${approved}</td>
                 <td class="text-right">${rate}%</td>
             </tr>
         `;
