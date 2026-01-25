@@ -734,59 +734,37 @@ function initCharts() {
     }
 }
 
-function updateCharts() {
-    if (!requests || !volumeChart || !statusChart) return;
+async function updateCharts() {
+    if (!volumeChart || !statusChart) return;
 
-    // Status Chart Data
-    const pending = requests.filter(r => r.status === 'pending').length;
-    const approved = requests.filter(r => r.status === 'approved').length;
-    const rejected = requests.filter(r => r.status === 'rejected').length;
+    console.log('⚡ Loading chart data with aggregate queries...');
+    
+    // Get chart data from Supabase in parallel
+    const [dailyData, statusData] = await Promise.all([
+        getDailyChartData(),
+        getStatusDistribution()
+    ]);
+    
+    console.log('⚡ Chart data loaded:', { dailyData, statusData });
 
-    statusChart.data.datasets[0].data = [pending, approved, rejected];
+    // Status Chart Data (from aggregate query)
+    statusChart.data.datasets[0].data = [statusData.pending, statusData.approved, statusData.rejected];
     statusChart.update();
 
-    // Volume Chart Data (Last 7 Days)
-    const days = [];
-    const counts = [];
-
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const label = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-        days.push(label);
-
-        // Count requests for this day
-        // Simplified: Assuming req.timestamp is ms
-        const startOfDay = new Date(d.setHours(0, 0, 0, 0)).getTime();
-        const endOfDay = new Date(d.setHours(23, 59, 59, 999)).getTime();
-
-        const count = requests.filter(r => {
-            if (!r.timestamp) return false;
-            const t = new Date(r.timestamp).getTime();
-            return t >= startOfDay && t <= endOfDay;
-        }).length;
-
-        counts.push(count);
-    }
-
-    volumeChart.data.labels = days;
-    volumeChart.data.datasets[0].data = counts;
+    // Volume Chart Data (Last 7 Days from aggregate query)
+    volumeChart.data.labels = dailyData.map(d => d.label);
+    volumeChart.data.datasets[0].data = dailyData.map(d => d.count);
     volumeChart.update();
 
-    // --- Top Daily Bonuses Logic ---
+    // --- Top Daily Bonuses Logic (uses local requests - approximate) ---
     updateTopBonuses(requests);
 
     // --- Analysis Dashboard Logic ---
     updateAnalysisDashboard();
 
-    // --- Peak Hours Logic (Last 24 Hours) ---
+    // --- Peak Hours Logic (uses local requests - approximate) ---
     if (peakHoursChart) {
         const peakCounts = new Array(24).fill(0);
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1); // Last 24h context or just all time?
-        // Let's do All Time for "Typical Day" analysis, or Last 7 days to be relevant
-
-        // Filter Last 7 Days for Peak Analysis
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
 

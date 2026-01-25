@@ -171,6 +171,53 @@ async function getPerformanceStats(startDate, endDate) {
     return data || [];
 }
 
+// Get daily counts for charts (last 7 days)
+async function getDailyChartData() {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Get daily breakdown
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+        days.push({ start: dayStart, end: dayEnd, label: dayStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) });
+    }
+    
+    // Run count queries for each day in parallel
+    const countPromises = days.map(day => 
+        supabaseClient
+            .from('bonus_requests')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', day.start.toISOString())
+            .lt('created_at', day.end.toISOString())
+    );
+    
+    const results = await Promise.all(countPromises);
+    
+    return days.map((day, i) => ({
+        label: day.label,
+        count: results[i].count || 0
+    }));
+}
+
+// Get status distribution for pie chart
+async function getStatusDistribution() {
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    const [pending, approved, rejected] = await Promise.all([
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending').gte('created_at', monthAgo),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved').gte('created_at', monthAgo),
+        supabaseClient.from('bonus_requests').select('*', { count: 'exact', head: true }).eq('status', 'rejected').gte('created_at', monthAgo)
+    ]);
+    
+    return {
+        pending: pending.count || 0,
+        approved: approved.count || 0,
+        rejected: rejected.count || 0
+    };
+}
+
 // Fetch ALL requests (for exports/reports only)
 async function getAllBonusRequests() {
     const { data, error } = await supabaseClient
