@@ -470,20 +470,20 @@ async function checkUserHasPendingRequest(username) {
         return { limited: true, reason: 'pending', waitMinutes: 0 };
     }
     
-    // 2. Check for recently completed requests (5 minute cooldown)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // 2. Check for recently completed requests (40 minute cooldown)
+    const cooldownTime = new Date(Date.now() - 40 * 60 * 1000).toISOString();
     const { data: recent, error: recentError } = await supabaseClient
         .from('bonus_requests')
         .select('updated_at, status')
         .ilike('username', username)
         .in('status', ['approved', 'rejected'])
-        .gte('updated_at', fiveMinutesAgo)
+        .gte('updated_at', cooldownTime)
         .order('updated_at', { ascending: false })
         .limit(1);
     
     if (!recentError && recent && recent.length > 0) {
         const completedAt = new Date(recent[0].updated_at);
-        const cooldownEnd = new Date(completedAt.getTime() + 5 * 60 * 1000);
+        const cooldownEnd = new Date(completedAt.getTime() + 40 * 60 * 1000);
         const waitMs = cooldownEnd - Date.now();
         const waitMinutes = Math.ceil(waitMs / 60000);
         return { limited: true, reason: 'cooldown', waitMinutes: Math.max(1, waitMinutes) };
