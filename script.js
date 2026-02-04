@@ -16,6 +16,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetBtn');
     const bonusSelect = document.getElementById('bonusType');
     const bonusHelper = document.getElementById('bonusHelper');
+    const bonusRequirementsBox = document.getElementById('bonusRequirementsBox');
+    const bonusRequirementsText = document.getElementById('bonusRequirementsText');
+
+    // Bonus requirements information
+    const bonusRequirements = {
+        'telafi': {
+            title: 'Telafi Bonusu',
+            text: '30 gün içerisinde son 4 yatırımınızın her birinin en az <strong>500TL</strong> olması ve üst üste kayıp yaşamış olmanız gerekmektedir.'
+        },
+        'spor_50': {
+            title: '%50 Spor Bonusu',
+            text: 'En az <strong>500TL</strong> yatırım yapmış olmanız ve bakiyenizi <strong>spor alanında</strong> kullanmış olmanız gerekmektedir. Bu bonustan günde <strong>1 kez</strong> faydalanabilirsiniz.'
+        },
+        'spor_kayip': {
+            title: '%20 Spor Kayıp',
+            text: 'Bakiyenizi <strong>spor alanında</strong> kullanmış olmanız gerekmektedir. Gün içerisindeki toplam Yatırım ve Çekimleriniz baz alınarak hesaplanmaktadır.<br><br><em>💡 İpucu: Kayıp bonusunuzu "Bonus Talep Et" kısmından otomatik olarak da alabilirsiniz.</em>'
+        },
+        'casino_kayip': {
+            title: '%20 Casino Kayıp',
+            text: 'Bakiyenizi <strong>casino/canlı casino</strong> alanında kullanmış olmanız gerekmektedir. Gün içerisindeki toplam Yatırım ve Çekimleriniz baz alınarak hesaplanmaktadır.<br><br><em>💡 İpucu: Kayıp bonusunuzu "Bonus Talep Et" kısmından otomatik olarak da alabilirsiniz.</em>'
+        },
+        'sans_bonus': {
+            title: 'Şans Bonusu',
+            text: 'Son dönem içerisindeki Yatırım/Çekim durumunuz baz alınarak hesaplanmaktadır. Son işleminiz bir inisiyatif bonusu olduğu takdirde tekrar bir inisiyatif bonusu tanımlanmamaktadır.<br><br><em>Bu durumda diğer bonuslara başvurabilir ya da yatırım yaptıktan sonra tekrar talep oluşturabilirsiniz.</em>'
+        },
+        'sans_freespin': {
+            title: 'Şans Freespin',
+            text: 'Son dönem içerisindeki Yatırım/Çekim durumunuz baz alınarak hesaplanmaktadır. Son işleminiz bir inisiyatif bonusu olduğu takdirde tekrar bir inisiyatif bonusu tanımlanmamaktadır.<br><br><em>Bu durumda diğer bonuslara başvurabilir ya da yatırım yaptıktan sonra tekrar talep oluşturabilirsiniz.</em>'
+        },
+        'her_yatirima_fs': {
+            title: 'Her Yatırıma Freespin',
+            text: 'Tek seferde en az <strong>1.000TL</strong> yatırım yapmanız ve <strong>kayıp bonusunuzu kullandıktan sonra</strong> başvurmanız gerekmektedir.'
+        },
+        'zafer_yolu': {
+            title: '3 Günlük Zafer Yolu FS',
+            text: 'Tek seferde en az <strong>1.000TL</strong> yatırım yapmış olmanız ve bakiyenizi <strong>hiç kullanmadan</strong> bonusu talep etmiş olmanız gerekmektedir.<br><br>3 Günlük Zafer Yolu\'na başladığınızda <strong>3 gün üst üste</strong> yatırım yapmanız gereklidir. Ara verdiğiniz takdirde 1. günden tekrar başlayabilirsiniz.'
+        }
+    };
+
+    // Function to show bonus requirements
+    function showBonusRequirements(bonusValue, bonusText) {
+        const value = bonusValue.toLowerCase();
+        const text = bonusText.toLowerCase();
+        
+        let requirementInfo = null;
+        
+        // Match bonus type
+        if (value.includes('telafi') || text.includes('telafi')) {
+            requirementInfo = bonusRequirements.telafi;
+        } else if ((value.includes('spor') && value.includes('50')) || text.includes('%50 spor')) {
+            requirementInfo = bonusRequirements.spor_50;
+        } else if ((value.includes('spor') && value.includes('kayip')) || text.includes('spor kayıp') || text.includes('%20 spor')) {
+            requirementInfo = bonusRequirements.spor_kayip;
+        } else if ((value.includes('casino') && value.includes('kayip')) || text.includes('casino kayıp') || text.includes('%20 casino')) {
+            requirementInfo = bonusRequirements.casino_kayip;
+        } else if ((value.includes('sans') || value.includes('şans')) && (value.includes('freespin') || value.includes('fs'))) {
+            requirementInfo = bonusRequirements.sans_freespin;
+        } else if (value.includes('sans') || value.includes('şans') || text.includes('şans bonus')) {
+            requirementInfo = bonusRequirements.sans_bonus;
+        } else if (value.includes('zafer') || text.includes('zafer yolu')) {
+            requirementInfo = bonusRequirements.zafer_yolu;
+        } else if ((value.includes('her_yatirim') || value.includes('yatirima')) || text.includes('her yatırıma')) {
+            requirementInfo = bonusRequirements.her_yatirima_fs;
+        }
+        
+        if (requirementInfo && bonusRequirementsBox && bonusRequirementsText) {
+            bonusRequirementsText.innerHTML = requirementInfo.text;
+            bonusRequirementsBox.classList.remove('hidden');
+        } else if (bonusRequirementsBox) {
+            bonusRequirementsBox.classList.add('hidden');
+        }
+    }
 
     // Don't auto-check notifications on page load
     // Notifications will show when user queries their status
@@ -110,6 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show deposit confirmation modal
                 depositConfirmModal.classList.remove('hidden');
             }
+            
+            // Show bonus requirements info
+            showBonusRequirements(bonusSelect.value, selectedText);
+        } else {
+            // Hide requirements box when no bonus selected
+            if (bonusRequirementsBox) {
+                bonusRequirementsBox.classList.add('hidden');
+            }
         }
     });
     
@@ -129,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset bonus selection
             bonusSelect.value = '';
             bonusHelper.classList.add('hidden');
+            if (bonusRequirementsBox) bonusRequirementsBox.classList.add('hidden');
         });
     }
     
@@ -140,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             depositConfirmModal.classList.add('hidden');
             bonusSelect.value = '';
             bonusHelper.classList.add('hidden');
+            if (bonusRequirementsBox) bonusRequirementsBox.classList.add('hidden');
         });
     }
 
