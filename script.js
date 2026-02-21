@@ -7,6 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     }
 
+    // Convert URLs in text to clickable links (after escaping HTML)
+    function linkify(text) {
+        if (!text) return '';
+        const escaped = escapeHtml(text);
+        return escaped.replace(
+            /(https?:\/\/[^\s<]+)/g,
+            '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: underline; word-break: break-all;">$1</a>'
+        );
+    }
+
     const form = document.getElementById('bonusForm');
     // Note field removed
     const successState = document.getElementById('successState');
@@ -357,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     let noteHtml = '';
                     if (myRequest.admin_note) {
-                        noteHtml = '<div class="admin-note-display"><strong>Admin Notu:</strong> ' + myRequest.admin_note + '</div>';
+                        noteHtml = '<div class="admin-note-display"><strong>Admin Notu:</strong> ' + linkify(myRequest.admin_note) + '</div>';
                     }
                     
                     queueInfoEl.innerHTML = 
@@ -506,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const adminNoteHtml = adminNoteValue ? `
                     <div class="admin-note-display">
                         <span class="admin-note-label">Yönetici Notu:</span>
-                        <p>${escapeHtml(adminNoteValue)}</p>
+                        <p>${linkify(adminNoteValue)}</p>
                     </div>
                 ` : '';
 
@@ -615,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${request.admin_note ? `
             <div class="admin-note-box">
                 <span class="admin-note-title">Yönetici Notu:</span>
-                <p>${escapeHtml(request.admin_note)}</p>
+                <p>${linkify(request.admin_note)}</p>
             </div>
             ` : ''}
         `;
