@@ -1177,31 +1177,45 @@ async function viewRequest(id) {
         }
     }
 
-    // Populate History
+    // Populate History - fetch full history from Supabase
     const modalHistory = document.getElementById('modalHistory');
     if (modalHistory) {
-        const userHistory = requests.filter(r => r.username === req.username && r.id !== req.id);
-        userHistory.sort((a, b) => b.timestamp - a.timestamp); // Newest first
+        modalHistory.innerHTML = '<div style="padding:12px; color:#64748b; text-align:center;"><div class="spinner" style="width:16px;height:16px;border:2px solid rgba(100,116,139,0.3);border-top-color:#64748b;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;vertical-align:middle;"></div> Yükleniyor...</div>';
+        
+        getBonusRequestsByUsername(req.username).then(async (data) => {
+            const history = (data || []).filter(r => r.request_id !== req.id);
+            
+            if (history.length === 0) {
+                modalHistory.innerHTML = '<div style="padding:12px; color: #64748b; text-align:center;">Başka kayıt yok.</div>';
+            } else {
+                const adminList = await getAdminsCached();
+                const adminMap = {};
+                adminList.forEach(a => { adminMap[a.id] = a.username; });
 
-        if (userHistory.length === 0) {
-            modalHistory.innerHTML = '<div style="padding:12px; color: #64748b; text-align:center;">Başka kayıt yok.</div>';
-        } else {
-            modalHistory.innerHTML = userHistory.map(h => {
-                const date = new Date(h.timestamp).toLocaleDateString('tr-TR');
-                let stClass = 'pending';
-                let stText = 'Bekliyor';
-                if (h.status === 'approved') { stClass = 'approved'; stText = 'Onay'; }
-                if (h.status === 'rejected') { stClass = 'rejected'; stText = 'Red'; }
+                modalHistory.innerHTML = history.map(h => {
+                    const date = new Date(h.created_at).toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
+                    let stClass = 'pending';
+                    let stText = 'Bekliyor';
+                    if (h.status === 'approved') { stClass = 'approved'; stText = 'Onay'; }
+                    if (h.status === 'rejected') { stClass = 'rejected'; stText = 'Red'; }
+                    const bonusLabel = h.bonus_type_label || h.bonus_type || '-';
+                    const processedBy = h.processed_by ? (adminMap[h.processed_by] || '') : '';
+                    const adminNote = h.admin_note ? ` • ${h.admin_note.substring(0, 30)}${h.admin_note.length > 30 ? '...' : ''}` : '';
 
-                return `
-                    <div class="history-item">
-                        <span class="h-date">${date}</span>
-                        <span class="h-type">${h.bonusTypeLabel}</span>
-                        <span class="h-status ${stClass}">${stText}</span>
-                    </div>
-                `;
-            }).join('');
-        }
+                    return `
+                        <div class="history-item">
+                            <span class="h-date">${date}</span>
+                            <span class="h-type">${escapeHtml(bonusLabel)}</span>
+                            <span class="h-status ${stClass}">${stText}</span>
+                            ${processedBy ? `<span class="h-admin" style="font-size:0.7rem;color:#64748b;">👤 ${escapeHtml(processedBy)}${adminNote}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }).catch(err => {
+            console.error('Error loading modal history:', err);
+            modalHistory.innerHTML = '<div style="padding:12px; color: #64748b; text-align:center;">Geçmiş yüklenemedi.</div>';
+        });
     }
 
     // Show/Hide buttons based on status
@@ -1647,6 +1661,7 @@ function handleNavigation(view) {
     const hashtagManagementSection = document.getElementById('hashtagManagementSection');
     const performanceSection = document.getElementById('performanceSection');
     const blockedUsersSection = document.getElementById('blockedUsersSection');
+    const userHistorySection = document.getElementById('userHistorySection');
 
     // Reset All Views First
     if (statsGrid) statsGrid.style.display = 'none';
@@ -1657,6 +1672,7 @@ function handleNavigation(view) {
     if (hashtagManagementSection) hashtagManagementSection.style.display = 'none';
     if (performanceSection) performanceSection.style.display = 'none';
     if (blockedUsersSection) blockedUsersSection.style.display = 'none';
+    if (userHistorySection) userHistorySection.style.display = 'none';
     if (analyticsSection) {
         analyticsSection.classList.add('hidden');
         analyticsSection.style.display = 'none';
@@ -1734,6 +1750,12 @@ function handleNavigation(view) {
         if (performanceSection) {
             performanceSection.style.display = 'block';
             loadPerformanceStats();
+        }
+    } else if (view === 'userHistory') {
+        if (pageTitle) pageTitle.textContent = 'Üye Geçmişi';
+        const userHistorySection = document.getElementById('userHistorySection');
+        if (userHistorySection) {
+            userHistorySection.style.display = 'block';
         }
     } else if (view === 'blockedUsers') {
         if (pageTitle) pageTitle.textContent = 'Engelli Üyeler';
@@ -3311,3 +3333,159 @@ window.unblockUserAction = unblockUserAction;
 
 // Load blocked badge on init
 loadBlockedUsersBadge();
+
+// ========== USER HISTORY ==========
+
+// User History Search
+const userHistorySearchBtn = document.getElementById('userHistorySearchBtn');
+const userHistorySearchInput = document.getElementById('userHistorySearchInput');
+
+if (userHistorySearchBtn) {
+    userHistorySearchBtn.addEventListener('click', () => {
+        const username = userHistorySearchInput.value.trim();
+        if (username) searchUserHistory(username);
+    });
+}
+
+if (userHistorySearchInput) {
+    userHistorySearchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const username = userHistorySearchInput.value.trim();
+            if (username) searchUserHistory(username);
+        }
+    });
+}
+
+async function searchUserHistory(username) {
+    const resultDiv = document.getElementById('userHistoryResult');
+    if (!resultDiv) return;
+
+    resultDiv.innerHTML = '<div class="history-loading"><div class="spinner"></div> Yükleniyor...</div>';
+
+    try {
+        const data = await getBonusRequestsByUsername(username);
+
+        if (!data || data.length === 0) {
+            resultDiv.innerHTML = `
+                <div class="history-empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                    <p><strong>"${escapeHtml(username)}"</strong> kullanıcısına ait kayıt bulunamadı.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const adminList = await getAdminsCached();
+        const adminMap = {};
+        adminList.forEach(a => { adminMap[a.id] = a.username; });
+
+        const totalCount = data.length;
+        const approvedCount = data.filter(r => r.status === 'approved').length;
+        const rejectedCount = data.filter(r => r.status === 'rejected').length;
+        const pendingCount = data.filter(r => r.status === 'pending').length;
+
+        const firstRequest = new Date(data[data.length - 1].created_at);
+        const daysSinceFirst = Math.ceil((Date.now() - firstRequest.getTime()) / (1000 * 60 * 60 * 24));
+
+        const displayName = data[0].username;
+
+        let html = `
+            <div class="user-history-header">
+                <div class="avatar-lg">${displayName.substring(0, 2).toUpperCase()}</div>
+                <div class="user-history-info">
+                    <h3>${escapeHtml(displayName)}</h3>
+                    <p>İlk talep: ${firstRequest.toLocaleDateString('tr-TR')} • ${daysSinceFirst} gündür üye</p>
+                </div>
+            </div>
+
+            <div class="user-history-summary">
+                <div class="history-stat-card stat-total">
+                    <div class="history-stat-value">${totalCount}</div>
+                    <div class="history-stat-label">Toplam Talep</div>
+                </div>
+                <div class="history-stat-card stat-approved">
+                    <div class="history-stat-value">${approvedCount}</div>
+                    <div class="history-stat-label">Onaylanan</div>
+                </div>
+                <div class="history-stat-card stat-rejected">
+                    <div class="history-stat-value">${rejectedCount}</div>
+                    <div class="history-stat-label">Reddedilen</div>
+                </div>
+                <div class="history-stat-card stat-pending">
+                    <div class="history-stat-value">${pendingCount}</div>
+                    <div class="history-stat-label">Bekleyen</div>
+                </div>
+            </div>
+
+            <table class="user-history-table">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Bonus Türü</th>
+                        <th>Durum</th>
+                        <th>İşlemi Yapan</th>
+                        <th>Admin Notu</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.forEach(r => {
+            const date = new Date(r.created_at);
+            const dateStr = date.toLocaleDateString('tr-TR', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            let statusClass = 'status-pending';
+            let statusText = 'Beklemede';
+            if (r.status === 'approved') { statusClass = 'status-approved'; statusText = 'Onaylandı'; }
+            if (r.status === 'rejected') { statusClass = 'status-rejected'; statusText = 'Reddedildi'; }
+
+            const processedBy = r.processed_by ? (adminMap[r.processed_by] || '-') : '-';
+            const adminNote = r.admin_note || '-';
+            const bonusLabel = r.bonus_type_label || r.bonus_type || '-';
+
+            html += `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><span class="bonus-tag">${escapeHtml(bonusLabel)}</span></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${escapeHtml(processedBy)}</td>
+                    <td class="history-note-cell" title="${escapeHtml(adminNote)}">${escapeHtml(adminNote)}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        resultDiv.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading user history:', error);
+        resultDiv.innerHTML = `
+            <div class="history-empty-state">
+                <p>Geçmiş yüklenirken bir hata oluştu.</p>
+            </div>
+        `;
+    }
+}
+
+// Clicking username in table opens user history search
+document.addEventListener('click', (e) => {
+    const userCell = e.target.closest('.user-cell');
+    if (userCell) {
+        const usernameSpan = userCell.querySelector('span');
+        if (usernameSpan) {
+            const username = usernameSpan.textContent.trim();
+            handleNavigation('userHistory');
+            if (userHistorySearchInput) {
+                userHistorySearchInput.value = username;
+                searchUserHistory(username);
+            }
+        }
+    }
+});

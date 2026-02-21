@@ -617,6 +617,12 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.user-cell:hover {
+    opacity: 0.7;
 }
 
 .avatar-sm {
@@ -3923,4 +3929,211 @@ body {
     border-radius: 6px;
     font-size: 0.8rem;
     margin-left: 8px;
+}
+
+/* --- User History Section --- */
+.user-history-search-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.history-search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 16px;
+    flex: 1;
+    max-width: 400px;
+    transition: border-color 0.2s;
+}
+
+.history-search-input-wrapper:focus-within {
+    border-color: var(--accent-blue);
+}
+
+.history-search-input-wrapper svg {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+#userHistorySearchInput {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    width: 100%;
+    outline: none;
+}
+
+#userHistorySearchInput::placeholder {
+    color: var(--text-muted);
+}
+
+.user-history-result {
+    min-height: 200px;
+}
+
+.history-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 16px;
+}
+
+.history-empty-state p {
+    font-size: 0.9rem;
+    max-width: 300px;
+}
+
+/* User History Summary Card */
+.user-history-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.history-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.history-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.history-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.history-stat-card.stat-total .history-stat-value { color: var(--accent-blue); }
+.history-stat-card.stat-approved .history-stat-value { color: var(--accent-green); }
+.history-stat-card.stat-rejected .history-stat-value { color: var(--accent-red); }
+.history-stat-card.stat-pending .history-stat-value { color: var(--accent-yellow); }
+
+/* User History Table */
+.user-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.user-history-table thead th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-history-table tbody td {
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.user-history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.user-history-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.history-note-cell {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-admin-note {
+    color: var(--accent-blue);
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.user-history-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.user-history-header .avatar-lg {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.user-history-header .user-history-info h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.user-history-header .user-history-info p {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.history-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--text-muted);
+    gap: 12px;
+}
+
+.history-loading .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
