@@ -1071,7 +1071,10 @@ function renderTable() {
                 <td class="col-user">
                     <div class="user-cell">
                         <div class="avatar-sm">${req.username.substring(0, 2).toUpperCase()}</div>
-                        <span>${escapeHtml(req.username)}</span>
+                        <span class="username-text">${escapeHtml(req.username)}</span>
+                        <button class="btn-user-history" data-username="${escapeHtml(req.username)}" title="Üye Geçmişi">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
                     </div>
                 </td>
                 <td><span class="bonus-tag ${tagClass}">${escapeHtml(req.bonusTypeLabel)}</span></td>
@@ -3474,13 +3477,13 @@ async function searchUserHistory(username) {
     }
 }
 
-// Clicking username in table opens user history search
+// Clicking history icon in table opens user history search
 document.addEventListener('click', (e) => {
-    const userCell = e.target.closest('.user-cell');
-    if (userCell) {
-        const usernameSpan = userCell.querySelector('span');
-        if (usernameSpan) {
-            const username = usernameSpan.textContent.trim();
+    const historyBtn = e.target.closest('.btn-user-history');
+    if (historyBtn) {
+        e.stopPropagation();
+        const username = historyBtn.dataset.username;
+        if (username) {
             handleNavigation('userHistory');
             if (userHistorySearchInput) {
                 userHistorySearchInput.value = username;

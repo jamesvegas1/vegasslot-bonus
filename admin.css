@@ -617,12 +617,36 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    cursor: pointer;
-    transition: opacity 0.2s;
 }
 
-.user-cell:hover {
-    opacity: 0.7;
+.user-cell .username-text {
+    user-select: text;
+    cursor: text;
+}
+
+.btn-user-history {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 3px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    opacity: 0;
+}
+
+.user-cell:hover .btn-user-history {
+    opacity: 1;
+}
+
+.btn-user-history:hover {
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
 }
 
 .avatar-sm {
