@@ -1060,7 +1060,7 @@ function renderTable() {
         } else {
             noteDisplay = req.note ? req.note : '-';
         }
-        if (noteDisplay.length > 50) noteDisplay = noteDisplay.substring(0, 50) + '...';
+        if (noteDisplay.length > 60) noteDisplay = noteDisplay.substring(0, 60) + '...';
 
         const isSelected = selectedRequestIds.has(req.id);
         row.innerHTML = `
@@ -1077,8 +1077,8 @@ function renderTable() {
                         </button>
                     </div>
                 </td>
-                <td><span class="bonus-tag ${tagClass}">${escapeHtml(req.bonusTypeLabel)}</span></td>
-                <td class="col-note">
+                <td><span class="bonus-tag ${tagClass}" title="${escapeHtml(req.bonusTypeLabel)}">${escapeHtml(req.bonusTypeLabel)}</span></td>
+                <td class="col-note" title="${escapeHtml(noteDisplay)}">
                     <span class="note-truncate">${escapeHtml(noteDisplay)}</span>
                 </td>
                 <td class="col-date">${dateStr}</td>

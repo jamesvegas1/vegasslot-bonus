@@ -528,11 +528,12 @@ body {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: auto;
 }
 
 .data-table th {
     text-align: left;
-    padding: 16px 24px;
+    padding: 14px 16px;
     background: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid var(--border-color);
     color: var(--text-tertiary);
@@ -543,7 +544,7 @@ body {
 }
 
 .data-table td {
-    padding: 16px 24px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-secondary);
     vertical-align: middle;
@@ -608,9 +609,17 @@ body {
 
 .col-id {
     font-family: 'Monaco', monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-tertiary);
     white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.col-date {
+    white-space: nowrap;
+    font-size: 13px;
 }
 
 .user-cell {
@@ -677,6 +686,10 @@ body {
     border-radius: 20px;
     display: inline-block;
     white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -701,8 +714,8 @@ body {
 }
 
 .col-note {
-    max-width: 200px;
-    min-width: 150px;
+    max-width: 300px;
+    min-width: 180px;
 }
 
 .note-truncate {
