@@ -1516,6 +1516,126 @@ if (bulkRejectBtn) {
     });
 }
 
+// ========== ANALYTICS REPORT EXPORT ==========
+
+// Set default dates for report
+const reportStartDate = document.getElementById('reportStartDate');
+const reportEndDate = document.getElementById('reportEndDate');
+const exportReportBtn = document.getElementById('exportReportBtn');
+
+if (reportStartDate && reportEndDate) {
+    const today = new Date();
+    reportEndDate.value = today.toISOString().split('T')[0];
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    reportStartDate.value = weekAgo.toISOString().split('T')[0];
+}
+
+// Quick range buttons
+document.querySelectorAll('.report-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const range = btn.dataset.range;
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        document.querySelectorAll('.report-quick-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (reportEndDate) reportEndDate.value = todayStr;
+
+        if (range === 'today') {
+            if (reportStartDate) reportStartDate.value = todayStr;
+        } else if (range === 'week') {
+            const d = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (reportStartDate) reportStartDate.value = d.toISOString().split('T')[0];
+        } else if (range === 'month') {
+            const d = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (reportStartDate) reportStartDate.value = d.toISOString().split('T')[0];
+        } else if (range === 'all') {
+            if (reportStartDate) reportStartDate.value = '';
+            if (reportEndDate) reportEndDate.value = '';
+        }
+    });
+});
+
+// Export report button
+if (exportReportBtn) {
+    exportReportBtn.addEventListener('click', async () => {
+        const startVal = reportStartDate ? reportStartDate.value : '';
+        const endVal = reportEndDate ? reportEndDate.value : '';
+
+        exportReportBtn.disabled = true;
+        exportReportBtn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:6px;vertical-align:middle;"></div> Hazırlanıyor...';
+
+        try {
+            const data = await getBonusRequestsByDateRange(
+                startVal ? new Date(startVal).toISOString() : null,
+                endVal || null
+            );
+
+            if (!data || data.length === 0) {
+                showToast('Uyarı', 'Seçilen tarih aralığında veri bulunamadı.', 'info');
+                return;
+            }
+
+            const adminList = await getAdminsCached();
+            const adminMap = {};
+            adminList.forEach(a => { adminMap[a.id] = a.username; });
+
+            const headers = ['Talep ID', 'Kullanıcı Adı', 'Bonus Türü', 'Durum', 'Admin Notu', 'İşlemi Yapan', 'Talep Tarihi', 'İşlem Tarihi'];
+
+            const rows = data.map(r => {
+                const createdDate = new Date(r.created_at).toLocaleString('tr-TR');
+                const processedDate = r.processed_at ? new Date(r.processed_at).toLocaleString('tr-TR') : '-';
+                let status = 'Beklemede';
+                if (r.status === 'approved') status = 'Onaylandı';
+                if (r.status === 'rejected') status = 'Reddedildi';
+                const processedBy = r.processed_by ? (adminMap[r.processed_by] || '-') : '-';
+                const adminNote = (r.admin_note || '-').replace(/"/g, '""');
+                const bonusLabel = (r.bonus_type_label || r.bonus_type || '-').replace(/"/g, '""');
+
+                return [
+                    r.request_id,
+                    r.username,
+                    `"${bonusLabel}"`,
+                    status,
+                    `"${adminNote}"`,
+                    processedBy,
+                    createdDate,
+                    processedDate
+                ].join(',');
+            });
+
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            const fileName = startVal && endVal
+                ? `bonus_rapor_${startVal}_${endVal}.csv`
+                : startVal
+                    ? `bonus_rapor_${startVal}_sonrasi.csv`
+                    : `bonus_rapor_tum_zamanlar.csv`;
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('Başarılı', `${data.length} kayıt Excel raporu olarak indirildi.`, 'success');
+
+        } catch (error) {
+            console.error('Error exporting report:', error);
+            showToast('Hata', 'Rapor oluşturulurken bir hata oluştu.', 'error');
+        } finally {
+            exportReportBtn.disabled = false;
+            exportReportBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Excel İndir';
+        }
+    });
+}
+
 // CSV Export
 if (exportCsvBtn) {
     exportCsvBtn.addEventListener('click', () => {

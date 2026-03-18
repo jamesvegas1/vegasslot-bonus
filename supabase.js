@@ -312,6 +312,42 @@ async function getBonusRequestsByUsername(username) {
     return data;
 }
 
+async function getBonusRequestsByDateRange(startDate, endDate) {
+    const allData = [];
+    const pageSize = 1000;
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+        let query = supabaseClient
+            .from('bonus_requests')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + pageSize - 1);
+
+        if (startDate) {
+            query = query.gte('created_at', startDate);
+        }
+        if (endDate) {
+            const endDateObj = new Date(endDate);
+            endDateObj.setHours(23, 59, 59, 999);
+            query = query.lte('created_at', endDateObj.toISOString());
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching date range data:', error);
+            break;
+        }
+
+        allData.push(...(data || []));
+        hasMore = data && data.length === pageSize;
+        offset += pageSize;
+    }
+
+    return allData;
+}
+
 async function addBonusRequest(request) {
     dbLog('addBonusRequest called with:', request);
     const insertData = {
