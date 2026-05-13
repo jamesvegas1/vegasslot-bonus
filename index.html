@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bonus Talep | Casino</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -40,7 +40,28 @@
             <div class="corner corner-bl"></div>
             <div class="corner corner-br"></div>
 
-            <form id="bonusForm" class="bonus-form">
+            <!-- Live Support Announcement -->
+            <div class="live-support-announcement">
+                <div class="announcement-badge">
+                    <span class="pulse-dot"></span>
+                    Sistem Güncellendi
+                </div>
+                <h2 class="announcement-title">Bonus Talep Sistemi Güncellendi</h2>
+                <p class="announcement-text">
+                    Değerli üyelerimiz, bonus talepleriniz <strong>artık bu form üzerinden alınmamaktadır</strong>.
+                    Tüm bonus talepleriniz için <strong>7/24 Canlı Destek</strong> hattımız üzerinden bizimle iletişime geçebilirsiniz.
+                </p>
+                <a href="https://direct.lc.chat/19403409" target="_blank" rel="noopener noreferrer" class="live-support-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>Canlı Destek'e Bağlan</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+            </div>
+
+            <form id="bonusForm" class="bonus-form form-disabled" aria-disabled="true">
 
                 <div class="form-group">
                     <label for="username">Kullanıcı Adı</label>
@@ -52,7 +73,7 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </span>
-                        <input type="text" id="username" name="username" placeholder="Kullanıcı adınızı giriniz" required>
+                        <input type="text" id="username" name="username" placeholder="Kullanıcı adınızı giriniz" required disabled>
                     </div>
                 </div>
 
@@ -69,8 +90,8 @@
                                 <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
                             </svg>
                         </span>
-                        <select id="bonusType" name="bonusType" required>
-                            <option value="" disabled selected>Yükleniyor...</option>
+                        <select id="bonusType" name="bonusType" required disabled>
+                            <option value="" disabled selected>Bonus talepleri Canlı Destek üzerinden alınmaktadır</option>
                         </select>
                     </div>
                     <div id="bonusHelper" class="input-helper hidden">
@@ -112,9 +133,9 @@
                 </div>
 
                 <div class="cta-wrapper">
-                    <p class="cta-helper">İşlem süresi genellikle birkaç dakikadır</p>
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        <span class="btn-text">Bonus Talep Et</span>
+                    <p class="cta-helper">Bonus talepleri için lütfen Canlı Destek hattımızı kullanın</p>
+                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                        <span class="btn-text">Form Pasif - Canlı Destek'i Kullanın</span>
                         <span class="btn-shine"></span>
                         <span class="loader hidden"></span>
                     </button>
@@ -145,7 +166,7 @@
             </div>
 
             <!-- Status Check Section -->
-            <div id="statusCheckSection" class="status-check-section">
+            <div id="statusCheckSection" class="status-check-section hidden">
                 <div class="status-check-divider">
                     <span>veya</span>
                 </div>
@@ -212,7 +233,7 @@
 
     <script src="security.js"></script>
     <script src="supabase.js?v=12"></script>
-    <script src="script.js?v=16"></script>
+    <script src="script.js?v=17"></script>
 </body>
 
 </html>

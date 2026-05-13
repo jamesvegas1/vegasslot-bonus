@@ -1,4 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ============================================
+    // BONUS PANEL PASİF MODU
+    // Bonus talepleri artık Canlı Destek üzerinden alınmaktadır.
+    // Form pasif olduğunda script çalışmaz.
+    // ============================================
+    const _bonusForm = document.getElementById('bonusForm');
+    if (_bonusForm && _bonusForm.classList.contains('form-disabled')) {
+        const _submitBtn = document.getElementById('submitBtn');
+        if (_submitBtn) {
+            _submitBtn.disabled = true;
+            _submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+        _bonusForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+        return;
+    }
+
     // XSS Protection
     function escapeHtml(text) {
         if (!text) return '';
